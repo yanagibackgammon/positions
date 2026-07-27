@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "imports/**"
-      - "config.json"
-      - "scripts/**"
-      - "site/**"
-      - "vendor/**"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 permissions:
