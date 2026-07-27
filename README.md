@@ -115,3 +115,8 @@ Double後にPassした局面など、確率ベクトルを表示できないア�
 XGファイル解析には、公式XGファイル仕様を実装した `gtback/xgread` を同梱しています。ライセンスは `LICENSES/xgread-LICENSE.txt` を参照してください。
 
 盤面SVGは本プロジェクト独自の描画であり、bgLogの画像やプログラムを複製していません。
+
+
+## 自動公開
+
+`main` ブランチへ変更をコミットすると、`.xg`、HTML、CSS、JavaScript、設定、解析スクリプトなど、更新したファイルの種類にかかわらず `Build and deploy positions` が自動実行されます。処理完了後、GitHub Pagesへ自動反映されます。

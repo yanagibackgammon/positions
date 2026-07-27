@@ -314,142 +314,205 @@ def svg_text(text: str) -> str:
 
 
 def render_board_svg(row: dict[str, Any]) -> str:
-    width, height = 760, 420
-    margin = 16
-    frame_x, frame_y = margin, margin
-    frame_w, frame_h = width - margin * 2, height - margin * 2
-    inner_pad = 14
-    surface_x, surface_y = frame_x + inner_pad, frame_y + inner_pad
-    surface_w, surface_h = frame_w - inner_pad * 2, frame_h - inner_pad * 2
-    bar_w = 54
-    point_w = (surface_w - bar_w) / 12
-    bar_x = surface_x + point_w * 6
-    tri_h = 148
+    """Render a clean monochrome bgLog/Minstrels-inspired board diagram.
 
-    palette = {
-        "felt": "#285A4E",
-        "felt2": "#1D483F",
-        "wood": "#6B4B38",
-        "wood2": "#2F2019",
-        "pointA": "#E1C37B",
-        "pointB": "#8E3640",
-        "light": "#F7F0DA",
-        "lightStroke": "#B29765",
-        "dark": "#2B313C",
-        "darkStroke": "#0C1015",
-        "gold": "#D2B16E",
-        "text": "#F4ECDD",
-        "pip": "#221E19",
-        "bg": "#0F1418",
-    }
+    The position is always viewed from the on-roll player's perspective:
+    positive checkers are the on-roll side and are drawn in black; negative
+    checkers are the opponent and are drawn in white.
+    """
+    width, height = 690, 546
+    board_top, board_bottom = 28, 518
+    top_label_y, bottom_label_y = 18, 540
+
+    left_tray_x1, left_tray_x2 = 11, 59
+    left_board_x1, left_board_x2 = 60, 327
+    bar_x1, bar_x2 = 328, 367
+    right_board_x1, right_board_x2 = 368, 637
+    right_tray_x1, right_tray_x2 = 638, 684
+
+    top_tip_y = 251
+    bottom_tip_y = 294
+    side_band_top, side_band_bottom = 247, 300
+    point_w = (left_board_x2 - left_board_x1) / 6
+    checker_r = 21.1
+
+    points = row["position"]
+
+    on_roll_pips = sum(point * max(int(points[point]), 0) for point in range(1, 25))
+    on_roll_pips += 25 * max(int(points[25]), 0)
+    opponent_pips = sum((25 - point) * max(-int(points[point]), 0) for point in range(1, 25))
+    opponent_pips += 25 * max(-int(points[0]), 0)
+
+    on_roll_on_board = sum(max(int(points[point]), 0) for point in range(1, 25)) + max(int(points[25]), 0)
+    opponent_on_board = sum(max(-int(points[point]), 0) for point in range(1, 25)) + max(-int(points[0]), 0)
+    on_roll_off = max(0, 15 - on_roll_on_board)
+    opponent_off = max(0, 15 - opponent_on_board)
 
     elements: list[str] = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Backgammon position {svg_text(row["id"])}">',
-        "<defs>",
-        '<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".42"/></filter>',
-        '<linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7E5A44"/><stop offset=".5" stop-color="#3A281F"/><stop offset="1" stop-color="#8A624B"/></linearGradient>',
-        '<linearGradient id="felt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F6659"/><stop offset="1" stop-color="#1C433B"/></linearGradient>',
-        '<radialGradient id="lightChecker" cx="36%" cy="28%" r="72%"><stop offset="0" stop-color="#FFF9EB"/><stop offset=".72" stop-color="#EDDCB8"/><stop offset="1" stop-color="#BFA36C"/></radialGradient>',
-        '<radialGradient id="darkChecker" cx="36%" cy="28%" r="72%"><stop offset="0" stop-color="#586171"/><stop offset=".68" stop-color="#2B313C"/><stop offset="1" stop-color="#0C1015"/></radialGradient>',
-        "</defs>",
-        f'<rect width="{width}" height="{height}" rx="18" fill="{palette["bg"]}"/>',
-        f'<rect x="{frame_x}" y="{frame_y}" width="{frame_w}" height="{frame_h}" rx="16" fill="url(#wood)" stroke="#A78359" stroke-width="2"/>',
-        f'<rect x="{surface_x}" y="{surface_y}" width="{surface_w}" height="{surface_h}" rx="8" fill="url(#felt)" stroke="#121817" stroke-width="2"/>',
-        f'<rect x="{bar_x}" y="{surface_y}" width="{bar_w}" height="{surface_h}" fill="#12181A" opacity=".98"/>',
-        f'<rect x="{surface_x}" y="{surface_y + surface_h / 2 - 2}" width="{surface_w}" height="4" fill="rgba(255,255,255,.08)"/>',
+        '<rect width="690" height="546" fill="#ffffff"/>',
+        '<g stroke="#000000" stroke-linejoin="round">',
+        f'<rect x="{left_tray_x1}" y="{board_top}" width="{right_tray_x2-left_tray_x1}" height="{board_bottom-board_top}" fill="#ffffff" stroke-width="4"/>',
+        f'<line x1="{left_tray_x2}" y1="{board_top}" x2="{left_tray_x2}" y2="{board_bottom}" stroke-width="4"/>',
+        f'<line x1="{left_board_x2}" y1="{board_top}" x2="{left_board_x2}" y2="{board_bottom}" stroke-width="4"/>',
+        f'<line x1="{bar_x2}" y1="{board_top}" x2="{bar_x2}" y2="{board_bottom}" stroke-width="4"/>',
+        f'<line x1="{right_board_x2}" y1="{board_top}" x2="{right_board_x2}" y2="{board_bottom}" stroke-width="4"/>',
+        f'<rect x="{left_tray_x1}" y="{side_band_top}" width="{left_tray_x2-left_tray_x1}" height="{side_band_bottom-side_band_top}" fill="#000000" stroke-width="0"/>',
+        f'<rect x="{right_tray_x1}" y="{side_band_top}" width="{right_tray_x2-right_tray_x1}" height="{side_band_bottom-side_band_top}" fill="#000000" stroke-width="0"/>',
     ]
 
-    top_points = list(range(13, 25))
-    bottom_points = list(range(12, 0, -1))
+    def point_x(col: int, right_half: bool) -> float:
+        origin = right_board_x1 if right_half else left_board_x1
+        return origin + col * point_w
 
-    for col, point in enumerate(top_points):
-        x = surface_x + col * point_w + (bar_w if col >= 6 else 0)
-        color = palette["pointA"] if col % 2 == 0 else palette["pointB"]
-        elements.append(
-            f'<polygon points="{x:.1f},{surface_y:.1f} {x + point_w:.1f},{surface_y:.1f} {x + point_w / 2:.1f},{surface_y + tri_h:.1f}" fill="{color}" stroke="#2C2825" stroke-width="1"/>'
-        )
-        elements.append(f'<text x="{x + point_w / 2:.1f}" y="{surface_y + 16:.1f}" text-anchor="middle" fill="{palette["pip"]}" font-family="Arial" font-size="10" font-weight="700">{point}</text>')
+    # Top points: 13-18 on the left, 19-24 on the right.
+    for half, origin_right in ((False, False), (True, True)):
+        for col in range(6):
+            x = point_x(col, origin_right)
+            fill = "#cfcfcf" if col % 2 == 1 else "#ffffff"
+            elements.append(
+                f'<polygon points="{x:.2f},{board_top+2} {x+point_w:.2f},{board_top+2} '
+                f'{x+point_w/2:.2f},{top_tip_y}" fill="{fill}" stroke-width="1"/>'
+            )
 
-    bottom = surface_y + surface_h
-    for col, point in enumerate(bottom_points):
-        x = surface_x + col * point_w + (bar_w if col >= 6 else 0)
-        color = palette["pointB"] if col % 2 == 0 else palette["pointA"]
-        elements.append(
-            f'<polygon points="{x:.1f},{bottom:.1f} {x + point_w:.1f},{bottom:.1f} {x + point_w / 2:.1f},{bottom - tri_h:.1f}" fill="{color}" stroke="#2C2825" stroke-width="1"/>'
-        )
-        elements.append(f'<text x="{x + point_w / 2:.1f}" y="{bottom - 7:.1f}" text-anchor="middle" fill="{palette["pip"]}" font-family="Arial" font-size="10" font-weight="700">{point}</text>')
+    # Bottom points: 12-7 on the left, 6-1 on the right.
+    for half, origin_right in ((False, False), (True, True)):
+        for col in range(6):
+            x = point_x(col, origin_right)
+            fill = "#cfcfcf" if col % 2 == 0 else "#ffffff"
+            elements.append(
+                f'<polygon points="{x:.2f},{board_bottom-2} {x+point_w:.2f},{board_bottom-2} '
+                f'{x+point_w/2:.2f},{bottom_tip_y}" fill="{fill}" stroke-width="1"/>'
+            )
+
+    elements.append('</g>')
+
+    # Point labels, scores and pip counts.
+    elements.extend([
+        '<g fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="18">',
+        f'<text x="20" y="{top_label_y}" text-anchor="middle">{row["onRollOpponentScore"]}/{row["matchLength"]}</text>',
+        f'<text x="20" y="{bottom_label_y}" text-anchor="middle">{row["onRollScore"]}/{row["matchLength"]}</text>',
+        f'<text x="347.5" y="{top_label_y}" text-anchor="middle">{opponent_pips}</text>',
+        f'<text x="347.5" y="{bottom_label_y}" text-anchor="middle">{on_roll_pips}</text>',
+    ])
+
+    for col, point in enumerate(range(13, 19)):
+        x = left_board_x1 + (col + 0.5) * point_w
+        elements.append(f'<text x="{x:.2f}" y="{top_label_y}" text-anchor="middle">{point}</text>')
+    for col, point in enumerate(range(19, 25)):
+        x = right_board_x1 + (col + 0.5) * point_w
+        elements.append(f'<text x="{x:.2f}" y="{top_label_y}" text-anchor="middle">{point}</text>')
+    for col, point in enumerate(range(12, 6, -1)):
+        x = left_board_x1 + (col + 0.5) * point_w
+        elements.append(f'<text x="{x:.2f}" y="{bottom_label_y}" text-anchor="middle">{point}</text>')
+    for col, point in enumerate(range(6, 0, -1)):
+        x = right_board_x1 + (col + 0.5) * point_w
+        elements.append(f'<text x="{x:.2f}" y="{bottom_label_y}" text-anchor="middle">{point}</text>')
+    elements.append('</g>')
 
     def point_center(point: int) -> tuple[float, bool]:
-        if point >= 13:
+        if 13 <= point <= 18:
             col = point - 13
-            top = True
-        else:
+            return left_board_x1 + (col + 0.5) * point_w, True
+        if 19 <= point <= 24:
+            col = point - 19
+            return right_board_x1 + (col + 0.5) * point_w, True
+        if 7 <= point <= 12:
             col = 12 - point
-            top = False
-        x = surface_x + col * point_w + (bar_w if col >= 6 else 0) + point_w / 2
-        return x, top
+            return left_board_x1 + (col + 0.5) * point_w, False
+        col = 6 - point
+        return right_board_x1 + (col + 0.5) * point_w, False
 
-    def checker(cx: float, cy: float, positive: bool, label: int | None = None) -> None:
-        fill = "url(#lightChecker)" if positive else "url(#darkChecker)"
-        stroke = palette["lightStroke"] if positive else palette["darkStroke"]
-        text_color = "#201B14" if positive else "#FFFFFF"
-        elements.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="19" fill="{fill}" stroke="{stroke}" stroke-width="2" filter="url(#shadow)"/>')
-        elements.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="14.4" fill="none" stroke="{stroke}" stroke-opacity=".42"/>')
-        if label is not None:
-            elements.append(f'<text x="{cx:.1f}" y="{cy + 5:.1f}" text-anchor="middle" fill="{text_color}" font-family="Arial" font-size="15" font-weight="900">{label}</text>')
+    def checker(cx: float, cy: float, black: bool, count_label: int | None = None) -> None:
+        fill = "#000000" if black else "#ffffff"
+        text_fill = "#ffffff" if black else "#000000"
+        elements.append(
+            f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="{checker_r}" fill="{fill}" stroke="#000000" stroke-width="1.2"/>'
+        )
+        if count_label is not None:
+            elements.append(
+                f'<text x="{cx:.2f}" y="{cy+6:.2f}" text-anchor="middle" fill="{text_fill}" '
+                f'font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">{count_label}</text>'
+            )
 
-    points = row["position"]
+    # Checkers on points. Positive/on-roll checkers are black; opponent checkers are white.
     for point in range(1, 25):
         value = int(points[point])
         if value == 0:
             continue
         count = abs(value)
-        positive = value > 0
+        black = value > 0
         cx, top = point_center(point)
         visible = min(count, 5)
+        step = 43.0
         for idx in range(visible):
-            cy = surface_y + 33 + idx * 33 if top else surface_y + surface_h - 33 - idx * 33
-            checker(cx, cy, positive, count if idx == visible - 1 and count > 5 else None)
+            cy = board_top + 25 + idx * step if top else board_bottom - 25 - idx * step
+            checker(cx, cy, black, count if idx == visible - 1 and count > 5 else None)
 
-    bar_center = bar_x + bar_w / 2
-    opp_bar = abs(int(points[0]))
-    on_roll_bar = abs(int(points[25]))
-    for idx in range(min(opp_bar, 5)):
-        checker(bar_center, surface_y + 38 + idx * 33, False, opp_bar if idx == min(opp_bar, 5) - 1 and opp_bar > 5 else None)
+    # Bar checkers.
+    bar_center = (bar_x1 + bar_x2) / 2
+    opponent_bar = max(-int(points[0]), 0)
+    on_roll_bar = max(int(points[25]), 0)
+    for idx in range(min(opponent_bar, 5)):
+        checker(bar_center, board_top + 25 + idx * 43, False, opponent_bar if idx == min(opponent_bar, 5) - 1 and opponent_bar > 5 else None)
     for idx in range(min(on_roll_bar, 5)):
-        checker(bar_center, surface_y + surface_h - 38 - idx * 33, True, on_roll_bar if idx == min(on_roll_bar, 5) - 1 and on_roll_bar > 5 else None)
+        checker(bar_center, board_bottom - 25 - idx * 43, True, on_roll_bar if idx == min(on_roll_bar, 5) - 1 and on_roll_bar > 5 else None)
 
-    cube_y = surface_y + surface_h / 2 - 21
+    # Doubling cube in the bar.
+    cube_size = 36
+    cube_x = bar_center - cube_size / 2
     if row["cubeOwner"] == "opponent":
-        cube_y = surface_y + 88
+        cube_y = board_top + 7
     elif row["cubeOwner"] == "onRoll":
-        cube_y = surface_y + surface_h - 130
-    cube_x = bar_center - 21
+        cube_y = board_bottom - cube_size - 7
+    else:
+        cube_y = (board_top + board_bottom - cube_size) / 2
     elements.extend([
-        f'<rect x="{cube_x:.1f}" y="{cube_y:.1f}" width="42" height="42" rx="8" fill="#F0E5D1" stroke="#9D8D6D" stroke-width="2"/>',
-        f'<text x="{bar_center:.1f}" y="{cube_y + 28:.1f}" text-anchor="middle" fill="#1B1B1B" font-family="Arial" font-size="19" font-weight="900">{row["cubeValue"]}</text>',
+        f'<rect x="{cube_x:.2f}" y="{cube_y:.2f}" width="{cube_size}" height="{cube_size}" rx="3" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>',
+        f'<text x="{bar_center:.2f}" y="{cube_y+25:.2f}" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="22">{row["cubeValue"]}</text>',
     ])
 
+    # Dice, placed in the right half near the centre line.
     if row["diceValues"]:
-        die_size = 34
-        gap = 12
-        start_x = surface_x + surface_w - (die_size * len(row["diceValues"]) + gap * (len(row["diceValues"]) - 1)) - 18
-        die_y = surface_y + surface_h / 2 - die_size / 2
-        pip_positions = {
-            1: [(17, 17)],
-            2: [(9, 9), (25, 25)],
-            3: [(9, 9), (17, 17), (25, 25)],
-            4: [(9, 9), (25, 9), (9, 25), (25, 25)],
-            5: [(9, 9), (25, 9), (17, 17), (9, 25), (25, 25)],
-            6: [(9, 8), (25, 8), (9, 17), (25, 17), (9, 26), (25, 26)],
+        die_size = 36
+        die_gap = 10
+        start_x = 463
+        die_y = 254
+        pip_map = {
+            1: [(18, 18)],
+            2: [(10, 10), (26, 26)],
+            3: [(10, 10), (18, 18), (26, 26)],
+            4: [(10, 10), (26, 10), (10, 26), (26, 26)],
+            5: [(10, 10), (26, 10), (18, 18), (10, 26), (26, 26)],
+            6: [(10, 8), (26, 8), (10, 18), (26, 18), (10, 28), (26, 28)],
         }
-        for index, die in enumerate(row["diceValues"]):
-            dx = start_x + index * (die_size + gap)
-            elements.append(f'<rect x="{dx:.1f}" y="{die_y:.1f}" width="{die_size}" height="{die_size}" rx="7" fill="#F4EAD2" stroke="#9D8D6D" stroke-width="2"/>')
-            for px, py in pip_positions[int(die)]:
-                elements.append(f'<circle cx="{dx + px:.1f}" cy="{die_y + py:.1f}" r="3" fill="#26201B"/>')
+        for idx, die in enumerate(row["diceValues"]):
+            dx = start_x + idx * (die_size + die_gap)
+            elements.append(f'<rect x="{dx}" y="{die_y}" width="{die_size}" height="{die_size}" rx="4" fill="#000000"/>')
+            for px, py in pip_map[int(die)]:
+                elements.append(f'<circle cx="{dx+px}" cy="{die_y+py}" r="3.4" fill="#ffffff"/>')
 
-    elements.append("</svg>")
+    # Borne-off checkers in the right tray.
+    tray_center = (right_tray_x1 + right_tray_x2) / 2
+    off_w, off_h = 41, 12
+    for idx in range(opponent_off):
+        y = board_top + 5 + idx * 13.8
+        if y + off_h > side_band_top - 3:
+            break
+        elements.append(
+            f'<rect x="{tray_center-off_w/2:.2f}" y="{y:.2f}" width="{off_w}" height="{off_h}" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1"/>'
+        )
+    for idx in range(on_roll_off):
+        y = board_bottom - 5 - off_h - idx * 13.8
+        if y < side_band_bottom + 3:
+            break
+        elements.append(
+            f'<rect x="{tray_center-off_w/2:.2f}" y="{y:.2f}" width="{off_w}" height="{off_h}" rx="4" fill="#000000" stroke="#000000" stroke-width="1"/>'
+        )
+
+    # On-roll marker (black side is always shown at the bottom).
+    elements.append('<circle cx="660" cy="535" r="8.5" fill="#000000"/>')
+    elements.append('</svg>')
     return "".join(elements)
 
 
