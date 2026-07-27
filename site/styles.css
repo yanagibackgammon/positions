@@ -3,7 +3,6 @@
   --theme-rgb: 183, 146, 75;
   --bg: #0c1013;
   --panel: #141a1e;
-  --panel-2: #1a2227;
   --line: #303a40;
   --text: #f3efe6;
   --muted: #aeb7bc;
@@ -13,7 +12,7 @@
 html { background: var(--bg); }
 body {
   margin: 0;
-  min-width: 1180px;
+  min-width: 0;
   color: var(--text);
   background:
     radial-gradient(circle at 92% -10%, rgba(var(--theme-rgb), .18), transparent 31rem),
@@ -23,9 +22,9 @@ body {
 button, input, select { font: inherit; }
 
 .page-header {
-  width: min(1560px, calc(100% - 64px));
+  width: min(1220px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 34px 4px 18px;
+  padding: 28px 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -35,26 +34,17 @@ button, input, select { font: inherit; }
 
 h1 {
   margin: 0;
+  color: var(--theme);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(34px, 3.4vw, 58px);
+  font-size: clamp(32px, 3vw, 50px);
   line-height: 1;
-  letter-spacing: -.035em;
+  letter-spacing: -.03em;
+  text-shadow: 0 0 12px rgba(var(--theme-rgb), .10);
 }
 
-.header-filter {
-  display: grid;
-  gap: 7px;
-  min-width: 220px;
-}
-.header-filter span {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .08em;
-  text-align: right;
-}
 .header-filter select {
-  min-height: 42px;
+  min-height: 40px;
+  min-width: 210px;
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
@@ -68,9 +58,9 @@ h1 {
 }
 
 main {
-  width: min(1560px, calc(100% - 64px));
+  width: min(1220px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 22px 0 60px;
+  padding: 18px 0 48px;
 }
 
 .table-card {
@@ -81,23 +71,10 @@ main {
   box-shadow: 0 22px 60px rgba(0, 0, 0, .22);
 }
 
-.table-toolbar {
-  min-height: 44px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  border-bottom: 1px solid var(--line);
-  background: #11171a;
-}
-.table-toolbar p { margin: 0; }
-#visible-count { color: var(--muted); font-size: 12px; font-weight: 700; }
-
-.table-scroll { overflow-x: auto; }
+.table-scroll { overflow-x: hidden; }
 
 table {
   width: 100%;
-  min-width: 1460px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -114,8 +91,8 @@ th {
   position: sticky;
   top: 0;
   z-index: 3;
-  height: 48px;
-  padding: 0 12px;
+  height: 50px;
+  padding: 0 10px;
   background: #1a2227;
   color: #c6ced2;
   text-align: left;
@@ -123,24 +100,33 @@ th {
   font-weight: 800;
   letter-spacing: .02em;
 }
+#board-header .count {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--theme);
+  font-size: 10px;
+  font-weight: 700;
+}
 
 tbody tr.main-row { background: var(--panel); }
 tbody tr.main-row:hover { background: #182126; }
 tbody tr.main-row:last-child td { border-bottom: 0; }
 
 td {
-  padding: 11px 10px;
+  padding: 10px 8px;
   color: #e8e9e7;
   font-size: 12px;
 }
 
-th:nth-child(1), td:nth-child(1) { width: 420px; }
-th:nth-child(2), td:nth-child(2) { width: 210px; }
-th:nth-child(3), td:nth-child(3) { width: 165px; }
-th:nth-child(n+4), td:nth-child(n+4) { width: 110px; }
+th:nth-child(1), td:nth-child(1) { width: 340px; }
+th:nth-child(2), td:nth-child(2) { width: 170px; }
+th:nth-child(3), td:nth-child(3) { width: 72px; }
+th:nth-child(4), td:nth-child(4) { width: 72px; }
+th:nth-child(5), td:nth-child(5) { width: 84px; }
+th:nth-child(n+6), td:nth-child(n+6) { width: 90px; }
 
 .board-button {
-  width: 390px;
+  width: 312px;
   padding: 0;
   border: 1px solid #3b454b;
   border-radius: 8px;
@@ -156,22 +142,24 @@ th:nth-child(n+4), td:nth-child(n+4) { width: 110px; }
   color: #fff;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.score {
+.score-value {
+  text-align: center;
   font-variant-numeric: tabular-nums;
-  line-height: 1.55;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px;
+  font-weight: 800;
 }
-.score strong {
+.score-sub {
   display: block;
-  color: #fff;
-  font-size: 13px;
-}
-.score span {
-  display: block;
+  margin-top: 5px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.35;
 }
 
 .number {

@@ -4,40 +4,37 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Backgammon Error Positions</title>
+  <title>Backgammon Positions</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="page-header">
-    <h1 id="page-title">Backgammon Error Positions</h1>
-    <label class="header-filter">
-      <span>判断種別</span>
-      <select id="type-filter">
+    <h1 id="page-title">Backgammon Positions</h1>
+    <div class="header-filter">
+      <select id="type-filter" aria-label="判断種別">
         <option value="">すべて</option>
         <option value="checker">Checker Play</option>
         <option value="double">Double Decision</option>
         <option value="take">Take / Pass</option>
       </select>
-    </label>
+    </div>
   </header>
 
   <main>
     <section class="table-card">
-      <div class="table-toolbar">
-        <p id="visible-count">0 positions</p>
-      </div>
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th class="board-column">盤面</th>
-              <th>最善アクション</th>
-              <th>スコア</th>
+              <th class="board-column" id="board-header">盤面</th>
+              <th>BEST</th>
+              <th>自分</th>
+              <th>相手</th>
+              <th>試合pt</th>
               <th>勝率</th>
               <th>G率</th>
               <th>B率</th>
               <th>負率</th>
-              <th>G負率</th>
             </tr>
           </thead>
           <tbody id="positions-body"></tbody>

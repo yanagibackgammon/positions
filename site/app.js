@@ -7,8 +7,8 @@ const state = {
 
 const elements = {
   title: document.getElementById("page-title"),
+  boardHeader: document.getElementById("board-header"),
   body: document.getElementById("positions-body"),
-  visibleCount: document.getElementById("visible-count"),
   empty: document.getElementById("empty-state"),
   type: document.getElementById("type-filter"),
   dialog: document.getElementById("board-dialog"),
@@ -40,7 +40,12 @@ function numericCell(value) {
   return `<td class="number ${empty ? "empty" : ""}">${formatPercent(value)}</td>`;
 }
 
+function scoreCell(value, subtext = "") {
+  return `<td><div class="score-value">${escapeHTML(value)}</div>${subtext ? `<span class="score-sub">${escapeHTML(subtext)}</span>` : ""}</td>`;
+}
+
 function rowHTML(position) {
+  const detailText = `${position.sourceFile} · G${position.gameNumber} / #${position.moveNumber}${position.dice && position.dice !== '—' ? ` · Dice ${position.dice}` : ''}`;
   return `
     <tr class="main-row">
       <td>
@@ -49,30 +54,24 @@ function rowHTML(position) {
         </button>
       </td>
       <td class="action">${escapeHTML(position.bestAction)}</td>
-      <td class="score">
-        <strong>${escapeHTML(position.playerScore)}-${escapeHTML(position.opponentScore)} / ${escapeHTML(position.matchLength)}pt</strong>
-        <span>${escapeHTML(position.sourceFile)}</span>
-        <span>G${escapeHTML(position.gameNumber)} · #${escapeHTML(position.moveNumber)}${position.dice && position.dice !== '—' ? ` · Dice ${escapeHTML(position.dice)}` : ''}</span>
-      </td>
+      ${scoreCell(position.playerScore, detailText)}
+      ${scoreCell(position.opponentScore)}
+      ${scoreCell(position.matchLength)}
       ${numericCell(position.winRate)}
       ${numericCell(position.gammonWinRate)}
       ${numericCell(position.backgammonWinRate)}
       ${numericCell(position.loseRate)}
-      ${numericCell(position.gammonLoseRate)}
     </tr>`;
 }
 
 function filterPositions() {
-  state.filtered = state.positions.filter((position) => {
-    if (elements.type.value && position.decisionType !== elements.type.value) return false;
-    return true;
-  });
+  state.filtered = state.positions.filter((position) => !elements.type.value || position.decisionType === elements.type.value);
   render();
 }
 
 function render() {
   elements.body.innerHTML = state.filtered.map(rowHTML).join("");
-  elements.visibleCount.textContent = `${state.filtered.length} positions`;
+  elements.boardHeader.innerHTML = `盤面 <span class="count">${state.filtered.length} positions</span>`;
   elements.empty.hidden = state.filtered.length !== 0;
 }
 
@@ -101,7 +100,7 @@ async function start() {
     state.positions = payload.positions || [];
     state.filtered = [...state.positions];
 
-    const title = payload.meta?.title || "Backgammon Error Positions";
+    const title = payload.meta?.title || "Backgammon Positions";
     document.title = title;
     elements.title.textContent = title;
 
