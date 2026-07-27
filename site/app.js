@@ -3,6 +3,8 @@
 const state = {
   positions: [],
   filtered: [],
+  sortKey: null,
+  sortDirection: "asc",
 };
 
 const elements = {
@@ -40,8 +42,16 @@ function numericCell(value) {
   return `<td class="number ${empty ? "empty" : ""}">${formatPercent(value)}</td>`;
 }
 
-function scoreCell(value) {
-  return `<td><div class="score-value">${escapeHTML(value)}</div></td>`;
+function awayLabel(position, away) {
+  if (position.isCrawford && away === 1) return "Crawford";
+  return `${away}away`;
+}
+
+function scoreCell(value, away = null, position = null) {
+  const sub = away == null || !position
+    ? ""
+    : `<span class="score-away ${position.isCrawford && away === 1 ? "crawford" : ""}">${awayLabel(position, away)}</span>`;
+  return `<td><div class="score-value">${escapeHTML(value)}</div>${sub}</td>`;
 }
 
 function rowHTML(position) {
@@ -54,13 +64,35 @@ function rowHTML(position) {
       </td>
       <td class="action">${escapeHTML(position.bestAction)}</td>
       ${scoreCell(position.matchLength)}
-      ${scoreCell(position.playerScore)}
-      ${scoreCell(position.opponentScore)}
+      ${scoreCell(position.playerScore, position.playerAway, position)}
+      ${scoreCell(position.opponentScore, position.opponentAway, position)}
       ${numericCell(position.winRate)}
       ${numericCell(position.gammonWinRate)}
       ${numericCell(position.loseRate)}
       ${numericCell(position.gammonLoseRate)}
     </tr>`;
+}
+
+function compareValues(a, b, key, type) {
+  const av = a[key];
+  const bv = b[key];
+  const aEmpty = av == null || (type === "number" && Number.isNaN(Number(av)));
+  const bEmpty = bv == null || (type === "number" && Number.isNaN(Number(bv)));
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return 1;
+  if (bEmpty) return -1;
+  if (type === "number") return Number(av) - Number(bv);
+  return String(av).localeCompare(String(bv), "ja", { numeric: true, sensitivity: "base" });
+}
+
+function sortedPositions() {
+  if (!state.sortKey) return [...state.filtered];
+  const heading = document.querySelector(`th[data-key="${CSS.escape(state.sortKey)}"]`);
+  const type = heading?.dataset.type || "text";
+  return [...state.filtered].sort((a, b) => {
+    const result = compareValues(a, b, state.sortKey, type);
+    return state.sortDirection === "asc" ? result : -result;
+  });
 }
 
 function filterPositions() {
@@ -69,13 +101,36 @@ function filterPositions() {
 }
 
 function render() {
-  elements.body.innerHTML = state.filtered.map(rowHTML).join("");
-  elements.boardHeader.textContent = `${state.filtered.length} positions`;
-  elements.empty.hidden = state.filtered.length !== 0;
+  const positions = sortedPositions();
+  elements.body.innerHTML = positions.map(rowHTML).join("");
+  elements.boardHeader.textContent = `${positions.length} positions`;
+  elements.empty.hidden = positions.length !== 0;
+
+  document.querySelectorAll("th[data-key]").forEach((heading) => {
+    heading.classList.remove("is-sorted", "desc");
+    if (heading.dataset.key === state.sortKey) {
+      heading.classList.add("is-sorted");
+      if (state.sortDirection === "desc") heading.classList.add("desc");
+    }
+  });
 }
 
 function installEvents() {
   elements.type.addEventListener("change", filterPositions);
+
+  document.querySelectorAll("th[data-key] button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const heading = button.closest("th");
+      const key = heading.dataset.key;
+      if (state.sortKey === key) {
+        state.sortDirection = state.sortDirection === "asc" ? "desc" : "asc";
+      } else {
+        state.sortKey = key;
+        state.sortDirection = "asc";
+      }
+      render();
+    });
+  });
 
   elements.body.addEventListener("click", (event) => {
     const boardButton = event.target.closest("[data-board]");
@@ -96,7 +151,11 @@ async function start() {
     const response = await fetch(`data/positions.json?v=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
-    state.positions = payload.positions || [];
+    state.positions = (payload.positions || []).map((position) => ({
+      ...position,
+      playerAway: Math.max(0, Number(position.matchLength) - Number(position.playerScore)),
+      opponentAway: Math.max(0, Number(position.matchLength) - Number(position.opponentScore)),
+    }));
     state.filtered = [...state.positions];
 
     const title = payload.meta?.title || "Backgammon Positions";

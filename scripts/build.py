@@ -111,13 +111,33 @@ def cube_value_number(cube_value: int) -> int:
     return 1 if cube_value == 0 else 2 ** abs(cube_value)
 
 
+def compact_move_notation(notation: str) -> str:
+    """Collapse repeated identical checker moves, e.g. 8/4 8/4 8/4 -> 8/4(3)."""
+    tokens = str(notation).split()
+    if len(tokens) < 2:
+        return str(notation)
+
+    counts: dict[str, int] = {}
+    order: list[str] = []
+    for token in tokens:
+        if token not in counts:
+            counts[token] = 0
+            order.append(token)
+        counts[token] += 1
+
+    return " ".join(
+        f"{token}({counts[token]})" if counts[token] > 1 else token
+        for token in order
+    )
+
+
 def candidate_payload(move: Move) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for rank, candidate in enumerate(move.candidates, start=1):
         rows.append(
             {
                 "rank": rank,
-                "action": xgread.format_moves(candidate.moves, move.position_before),
+                "action": compact_move_notation(xgread.format_moves(candidate.moves, move.position_before)),
                 "equityLoss": candidate.equity_loss,
                 **probability_fields(candidate.evaluation),
             }
@@ -144,7 +164,7 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
         return None
 
     best_action = (
-        xgread.format_moves(move.candidates[0].moves, move.position_before)
+        compact_move_notation(xgread.format_moves(move.candidates[0].moves, move.position_before))
         if move.candidates
         else "—"
     )
@@ -173,7 +193,7 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
         "onRollOpponentScore": opponent_score,
         "dice": f"{move.dice[0]}{move.dice[1]}",
         "diceValues": list(move.dice),
-        "playedAction": move.notation,
+        "playedAction": compact_move_notation(move.notation),
         "bestAction": best_action,
         "xgid": decision.xgid,
         "cubeValue": cube_value_number(move.cube_value),

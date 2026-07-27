@@ -9,7 +9,10 @@
 </head>
 <body>
   <header class="page-header">
-    <h1 id="page-title">Backgammon Positions</h1>
+    <div class="title-group">
+      <h1 id="page-title">Backgammon Positions</h1>
+      <span class="creator">Created by YANAGI Backgammon</span>
+    </div>
     <div class="header-filter">
       <select id="type-filter" aria-label="判断種別">
         <option value="">すべて</option>
@@ -27,14 +30,14 @@
           <thead>
             <tr>
               <th class="board-column" id="board-header">0 positions</th>
-              <th>BEST</th>
-              <th>試合</th>
-              <th>自分</th>
-              <th>相手</th>
-              <th>勝率</th>
-              <th>G率</th>
-              <th>負率</th>
-              <th>G負率</th>
+              <th data-key="bestAction" data-type="text"><button type="button">BEST<span class="sort-indicator"></span></button></th>
+              <th data-key="matchLength" data-type="number"><button type="button">試合<span class="sort-indicator"></span></button></th>
+              <th data-key="playerAway" data-type="number"><button type="button">自分<span class="sort-indicator"></span></button></th>
+              <th data-key="opponentAway" data-type="number"><button type="button">相手<span class="sort-indicator"></span></button></th>
+              <th data-key="winRate" data-type="number"><button type="button">勝率<span class="sort-indicator"></span></button></th>
+              <th data-key="gammonWinRate" data-type="number"><button type="button">G率<span class="sort-indicator"></span></button></th>
+              <th data-key="loseRate" data-type="number"><button type="button">負率<span class="sort-indicator"></span></button></th>
+              <th data-key="gammonLoseRate" data-type="number"><button type="button">G負率<span class="sort-indicator"></span></button></th>
             </tr>
           </thead>
           <tbody id="positions-body"></tbody>
