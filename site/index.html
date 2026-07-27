@@ -9,67 +9,35 @@
 </head>
 <body>
   <header class="page-header">
-    <div>
-      <p class="eyebrow">XG MATCH ANALYSIS</p>
-      <h1 id="page-title">Backgammon Error Positions</h1>
-      <p id="summary" class="summary">データを読み込んでいます…</p>
-    </div>
-    <div class="header-mark" aria-hidden="true">XG</div>
+    <h1 id="page-title">Backgammon Error Positions</h1>
+    <label class="header-filter">
+      <span>判断種別</span>
+      <select id="type-filter">
+        <option value="">すべて</option>
+        <option value="checker">Checker Play</option>
+        <option value="double">Double Decision</option>
+        <option value="take">Take / Pass</option>
+      </select>
+    </label>
   </header>
 
   <main>
-    <section class="controls" aria-label="絞り込み">
-      <label>
-        <span>キーワード</span>
-        <input id="search-input" type="search" placeholder="選手・対戦相手・アクション・ファイル名">
-      </label>
-      <label>
-        <span>判断種別</span>
-        <select id="type-filter">
-          <option value="">すべて</option>
-          <option value="checker">Checker Play</option>
-          <option value="double">Double Decision</option>
-          <option value="take">Take / Pass</option>
-        </select>
-      </label>
-      <label>
-        <span>判定</span>
-        <select id="class-filter">
-          <option value="">すべて</option>
-          <option value="Blunder">Blunder</option>
-          <option value="Error">Error</option>
-        </select>
-      </label>
-      <label>
-        <span>棋譜</span>
-        <select id="file-filter">
-          <option value="">すべて</option>
-        </select>
-      </label>
-      <button id="reset-button" class="secondary-button" type="button">リセット</button>
-    </section>
-
     <section class="table-card">
       <div class="table-toolbar">
         <p id="visible-count">0 positions</p>
-        <p class="sort-guide">列名をクリックすると昇順・降順を切り替えられます</p>
       </div>
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th class="board-column" data-key="id" data-type="text"><button type="button">盤面 <span></span></button></th>
-              <th data-key="classification" data-type="text"><button type="button">判定 <span></span></button></th>
-              <th data-key="decisionLabel" data-type="text"><button type="button">種別 <span></span></button></th>
-              <th data-key="sourceFile" data-type="text"><button type="button">対局 <span></span></button></th>
-              <th data-key="gameNumber" data-type="number"><button type="button">局面 <span></span></button></th>
-              <th data-key="playedAction" data-type="text"><button type="button">実戦アクション <span></span></button></th>
-              <th data-key="bestAction" data-type="text"><button type="button">最善アクション <span></span></button></th>
-              <th data-key="errorLoss" data-type="number"><button type="button">ロス <span></span></button></th>
-              <th data-key="winRate" data-type="number"><button type="button">勝率 <span></span></button></th>
-              <th data-key="gammonWinRate" data-type="number"><button type="button">G勝率 <span></span></button></th>
-              <th data-key="loseRate" data-type="number"><button type="button">敗率 <span></span></button></th>
-              <th data-key="gammonLoseRate" data-type="number"><button type="button">G負率 <span></span></button></th>
+              <th class="board-column">盤面</th>
+              <th>最善アクション</th>
+              <th>スコア</th>
+              <th>勝率</th>
+              <th>G率</th>
+              <th>B率</th>
+              <th>負率</th>
+              <th>G負率</th>
             </tr>
           </thead>
           <tbody id="positions-body"></tbody>
