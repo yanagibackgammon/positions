@@ -117,14 +117,14 @@ thead {
 }
 
 thead tr {
-  box-shadow: 0 2px 0 var(--theme), 0 8px 18px rgba(0, 0, 0, .28);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .28);
 }
 
 th {
   position: static;
   height: 46px;
   padding: 0;
-  background: #1a2227;
+  background: var(--theme);
   color: #ffffff;
   text-align: center;
   white-space: nowrap;
@@ -135,32 +135,42 @@ th {
 }
 
 th button {
+  position: relative;
   width: 100%;
   height: 46px;
-  padding: 0 3px;
+  padding: 0 18px;
   border: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   color: inherit;
   background: transparent;
   cursor: pointer;
   font-size: inherit;
   font-weight: inherit;
   line-height: 1;
+  text-align: center;
 }
-th button:hover { color: var(--theme); background: rgba(var(--theme-rgb), .06); }
-th.is-sorted button { color: var(--theme); }
-.sort-indicator { width: 10px; font-size: 10px; }
+th button:hover { color: #ffffff; background: rgba(255, 255, 255, .10); }
+th.is-sorted button { color: #ffffff; background: rgba(0, 0, 0, .13); }
+.sort-indicator {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 10px;
+  transform: translateY(-50%);
+  font-size: 10px;
+}
 th.is-sorted .sort-indicator::after { content: "▲"; }
 th.is-sorted.desc .sort-indicator::after { content: "▼"; }
 
 #board-header {
   padding: 0 3px;
-  color: inherit;
-  font-size: inherit;
-  font-weight: inherit;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: .01em;
 }
 
 tbody tr.main-row { background: var(--panel); }
