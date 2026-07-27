@@ -58,8 +58,8 @@ function rowHTML(position) {
       ${scoreCell(position.opponentScore)}
       ${numericCell(position.winRate)}
       ${numericCell(position.gammonWinRate)}
-      ${numericCell(position.backgammonWinRate)}
       ${numericCell(position.loseRate)}
+      ${numericCell(position.gammonLoseRate)}
     </tr>`;
 }
 

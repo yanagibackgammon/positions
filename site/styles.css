@@ -94,19 +94,19 @@ th {
   top: 0;
   z-index: 3;
   height: 66px;
-  padding: 0 6px;
+  padding: 0 4px;
   background: #1a2227;
-  color: #c6ced2;
-  text-align: left;
+  color: #ffffff;
+  text-align: center;
   white-space: nowrap;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: .01em;
 }
 #board-header {
-  color: #ffffff;
-  font-size: 20px;
-  font-weight: 700;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 tbody tr.main-row { background: var(--panel); }
@@ -119,15 +119,15 @@ td {
   font-size: 24px;
 }
 
-th:nth-child(1), td:nth-child(1) { width: 260px; }
-th:nth-child(2), td:nth-child(2) { width: 130px; }
+th:nth-child(1), td:nth-child(1) { width: 37%; }
+th:nth-child(2), td:nth-child(2) { width: 15%; }
 th:nth-child(3), td:nth-child(3),
 th:nth-child(4), td:nth-child(4),
-th:nth-child(5), td:nth-child(5) { width: 76px; }
-th:nth-child(n+6), td:nth-child(n+6) { width: 91px; }
+th:nth-child(5), td:nth-child(5) { width: 6%; }
+th:nth-child(n+6), td:nth-child(n+6) { width: 7.5%; }
 
 .board-button {
-  width: 238px;
+  width: 100%;
   padding: 0;
   border: 1px solid #3b454b;
   border-radius: 8px;
@@ -141,6 +141,7 @@ th:nth-child(n+6), td:nth-child(n+6) { width: 91px; }
 
 .action {
   color: #fff;
+  text-align: center;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 22px;
   line-height: 1.4;
@@ -150,11 +151,11 @@ th:nth-child(n+6), td:nth-child(n+6) { width: 91px; }
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 30px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 400;
 }
 .number {
-  text-align: right;
+  text-align: center;
   font-size: 24px;
   font-variant-numeric: tabular-nums;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
