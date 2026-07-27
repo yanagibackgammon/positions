@@ -34,7 +34,7 @@ function toRgb(hex) {
 }
 
 function formatPercent(value) {
-  return value == null || Number.isNaN(Number(value)) ? "—" : `${(Number(value) * 100).toFixed(2)}%`;
+  return value == null || Number.isNaN(Number(value)) ? "—" : `${(Number(value) * 100).toFixed(1)}%`;
 }
 
 function numericCell(value) {

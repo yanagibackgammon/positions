@@ -191,7 +191,7 @@ td:first-child {
   padding: 12px;
 }
 
-th:nth-child(1), td:nth-child(1) { width: 264px; }
+th:nth-child(1), td:nth-child(1) { width: 274px; }
 th:nth-child(2), td:nth-child(2) { width: 150px; }
 th:nth-child(3), td:nth-child(3) { width: 72px; }
 th:nth-child(4), td:nth-child(4),
@@ -199,7 +199,7 @@ th:nth-child(5), td:nth-child(5) { width: 82px; }
 th:nth-child(n+6), td:nth-child(n+6) { width: 92px; }
 
 .board-button {
-  width: 238px;
+  width: 248px;
   margin: 0 auto;
   padding: 0;
   border: 1px solid #3b454b;
