@@ -467,9 +467,10 @@ def render_board_svg(row: dict[str, Any]) -> str:
         cube_y = board_bottom - cube_size - 7
     else:
         cube_y = (board_top + board_bottom - cube_size) / 2
+    cube_label = "c" if row.get("isCrawford") else str(row["cubeValue"])
     elements.extend([
         f'<rect x="{cube_x:.2f}" y="{cube_y:.2f}" width="{cube_size}" height="{cube_size}" rx="3" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>',
-        f'<text x="{bar_center:.2f}" y="{cube_y+25:.2f}" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="22">{row["cubeValue"]}</text>',
+        f'<text x="{bar_center:.2f}" y="{cube_y+25:.2f}" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="22">{cube_label}</text>',
     ])
 
     # Dice, placed in the right half near the centre line.
@@ -534,6 +535,7 @@ def build() -> None:
 
     for source in imported_files:
         match = xgread.read(source)
+        games_by_number = {game.header.game_number: game for game in match.games}
         before = len(rows)
         for decision in match.decisions():
             event = decision.event
@@ -551,6 +553,8 @@ def build() -> None:
             for row in generated:
                 if row is None:
                     continue
+                game = games_by_number.get(decision.game_number)
+                row["isCrawford"] = bool(game and game.header.crawford_apply)
                 row["sourceFile"] = source.name
                 if cfg["anonymizeOpponents"]:
                     row["opponent"] = "Opponent"

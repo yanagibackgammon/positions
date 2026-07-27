@@ -40,12 +40,11 @@ function numericCell(value) {
   return `<td class="number ${empty ? "empty" : ""}">${formatPercent(value)}</td>`;
 }
 
-function scoreCell(value, subtext = "") {
-  return `<td><div class="score-value">${escapeHTML(value)}</div>${subtext ? `<span class="score-sub">${escapeHTML(subtext)}</span>` : ""}</td>`;
+function scoreCell(value) {
+  return `<td><div class="score-value">${escapeHTML(value)}</div></td>`;
 }
 
 function rowHTML(position) {
-  const detailText = `${position.sourceFile} · G${position.gameNumber} / #${position.moveNumber}${position.dice && position.dice !== '—' ? ` · Dice ${position.dice}` : ''}`;
   return `
     <tr class="main-row">
       <td>
@@ -54,9 +53,9 @@ function rowHTML(position) {
         </button>
       </td>
       <td class="action">${escapeHTML(position.bestAction)}</td>
-      ${scoreCell(position.playerScore, detailText)}
-      ${scoreCell(position.opponentScore)}
       ${scoreCell(position.matchLength)}
+      ${scoreCell(position.playerScore)}
+      ${scoreCell(position.opponentScore)}
       ${numericCell(position.winRate)}
       ${numericCell(position.gammonWinRate)}
       ${numericCell(position.backgammonWinRate)}
@@ -71,7 +70,7 @@ function filterPositions() {
 
 function render() {
   elements.body.innerHTML = state.filtered.map(rowHTML).join("");
-  elements.boardHeader.innerHTML = `盤面 <span class="count">${state.filtered.length} positions</span>`;
+  elements.boardHeader.textContent = `${state.filtered.length} positions`;
   elements.empty.hidden = state.filtered.length !== 0;
 }
 
