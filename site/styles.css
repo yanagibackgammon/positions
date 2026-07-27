@@ -84,12 +84,13 @@ h1 {
 main {
   width: min(1220px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 10px 0 48px;
+  padding: 0 0 48px;
 }
 
 .table-card {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-top: 0;
+  border-radius: 0;
   background: rgba(19, 25, 29, .96);
   box-shadow: 0 22px 60px rgba(0, 0, 0, .22);
 }
