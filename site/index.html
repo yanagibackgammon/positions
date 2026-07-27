@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Backgammon Error Positions</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">XG MATCH ANALYSIS</p>
+      <h1 id="page-title">Backgammon Error Positions</h1>
+      <p id="summary" class="summary">データを読み込んでいます…</p>
+    </div>
+    <div class="header-mark" aria-hidden="true">XG</div>
+  </header>
+
+  <main>
+    <section class="controls" aria-label="絞り込み">
+      <label>
+        <span>キーワード</span>
+        <input id="search-input" type="search" placeholder="選手・対戦相手・アクション・ファイル名">
+      </label>
+      <label>
+        <span>判断種別</span>
+        <select id="type-filter">
+          <option value="">すべて</option>
+          <option value="checker">Checker Play</option>
+          <option value="double">Double Decision</option>
+          <option value="take">Take / Pass</option>
+        </select>
+      </label>
+      <label>
+        <span>判定</span>
+        <select id="class-filter">
+          <option value="">すべて</option>
+          <option value="Blunder">Blunder</option>
+          <option value="Error">Error</option>
+        </select>
+      </label>
+      <label>
+        <span>棋譜</span>
+        <select id="file-filter">
+          <option value="">すべて</option>
+        </select>
+      </label>
+      <button id="reset-button" class="secondary-button" type="button">リセット</button>
+    </section>
+
+    <section class="table-card">
+      <div class="table-toolbar">
+        <p id="visible-count">0 positions</p>
+        <p class="sort-guide">列名をクリックすると昇順・降順を切り替えられます</p>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="board-column" data-key="id" data-type="text"><button type="button">盤面 <span></span></button></th>
+              <th data-key="classification" data-type="text"><button type="button">判定 <span></span></button></th>
+              <th data-key="decisionLabel" data-type="text"><button type="button">種別 <span></span></button></th>
+              <th data-key="sourceFile" data-type="text"><button type="button">対局 <span></span></button></th>
+              <th data-key="gameNumber" data-type="number"><button type="button">局面 <span></span></button></th>
+              <th data-key="playedAction" data-type="text"><button type="button">実戦アクション <span></span></button></th>
+              <th data-key="bestAction" data-type="text"><button type="button">最善アクション <span></span></button></th>
+              <th data-key="errorLoss" data-type="number"><button type="button">ロス <span></span></button></th>
+              <th data-key="winRate" data-type="number"><button type="button">勝率 <span></span></button></th>
+              <th data-key="gammonWinRate" data-type="number"><button type="button">G勝率 <span></span></button></th>
+              <th data-key="loseRate" data-type="number"><button type="button">敗率 <span></span></button></th>
+              <th data-key="gammonLoseRate" data-type="number"><button type="button">G負率 <span></span></button></th>
+            </tr>
+          </thead>
+          <tbody id="positions-body"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" class="empty-state" hidden>
+        条件に一致するポジションがありません。
+      </div>
+    </section>
+  </main>
+
+  <dialog id="board-dialog">
+    <button id="dialog-close" type="button" aria-label="閉じる">×</button>
+    <img id="dialog-image" alt="拡大したバックギャモンポジション">
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
