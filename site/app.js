@@ -177,7 +177,7 @@ function render() {
   elements.body.innerHTML = positions.map(rowHTML).join("");
   const pageTitle = `${state.baseTitle} ${positions.length} Positions`;
   elements.title.textContent = pageTitle;
-  document.title = pageTitle;
+  document.title = "Backgammon Positions";
   elements.empty.hidden = positions.length !== 0;
 
   document.querySelectorAll("[data-sort-key]").forEach((control) => {
