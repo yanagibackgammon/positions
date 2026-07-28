@@ -112,7 +112,7 @@ function summaryCell(position) {
           ${statLine("BK", scoreAwayMarkup(position.playerScore, awayText(position, position.playerAway)), "title-line")}
           ${statLine("PIP", `<span class="stat-value">${escapeHTML(position.blackPip)}</span>`)}
           ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.winRate))}</span>`)}
-          ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonWinRate))}</span>`)}
+          ${statLine("GW", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonWinRate))}</span>`)}
         </div>
         <div class="summary-middle">
           ${statLine("ML", `<span class="stat-value">${escapeHTML(position.matchLength)}</span>`, "center-line")}
@@ -122,7 +122,7 @@ function summaryCell(position) {
           ${statLine("WH", scoreAwayMarkup(position.opponentScore, awayText(position, position.opponentAway)), "title-line")}
           ${statLine("PIP", `<span class="stat-value">${escapeHTML(position.whitePip)}</span>`)}
           ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.loseRate))}</span>`)}
-          ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonLoseRate))}</span>`)}
+          ${statLine("GW", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonLoseRate))}</span>`)}
         </div>
       </div>
       <div class="win-scale" aria-hidden="true">
