@@ -207,7 +207,9 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
 
 def best_double_action(cube: CubeAction) -> str:
     effective_double = min(cube.double_take_equity, cube.double_drop_equity)
-    return "Double" if effective_double > cube.no_double_equity else "No Double"
+    if effective_double <= cube.no_double_equity:
+        return "No Double"
+    return "Double/Take" if cube.double_take_equity <= cube.double_drop_equity else "Double/Pass"
 
 
 def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, Any]) -> dict[str, Any] | None:
@@ -221,7 +223,11 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
     if cube.error_double == xgread.NOT_ANALYSED or loss + 1e-12 < float(cfg["errorThreshold"]):
         return None
 
-    actual = "Double" if cube.doubled else "No Double"
+    actual = (
+        "No Double"
+        if not cube.doubled
+        else ("Double/Take" if cube.took else "Double/Pass")
+    )
     if not cube.doubled:
         actual_eval: Evaluation | None = cube.no_double_analysis
     elif cube.took:
@@ -234,8 +240,8 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
     row_id = event_id(match.identity_hash, decision.game_number, decision.move_number, "double", actor)
     return {
         "id": row_id,
-        "decisionType": "double",
-        "decisionLabel": "Double Decision",
+        "decisionType": "cube",
+        "decisionLabel": "Cube Action",
         "classification": classification(loss, float(cfg["blunderThreshold"])),
         "errorLoss": loss,
         "player": actor,
@@ -273,45 +279,46 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
     if not cube.doubled or cube.took is None or not cfg["includeTakeErrors"]:
         return None
 
-    actor_sign = -cube.player
-    actor = player_name(match, actor_sign)
+    taker_sign = -cube.player
+    taker = player_name(match, taker_sign)
     targets = {str(v).casefold() for v in cfg["targetPlayers"]}
-    if not target_enabled(actor, targets):
+    if not target_enabled(taker, targets):
         return None
 
     loss = abs(float(cube.error_take))
     if cube.error_take == xgread.NOT_ANALYSED or loss + 1e-12 < float(cfg["errorThreshold"]):
         return None
 
-    actual = "Take" if cube.took else "Pass"
-    best = "Take" if cube.double_take_equity < cube.double_drop_equity else "Pass"
+    actual = "Double/Take" if cube.took else "Double/Pass"
+    best = "Double/Take" if cube.double_take_equity < cube.double_drop_equity else "Double/Pass"
     actual_eval = cube.double_take_analysis if cube.took else None
-    actor_score, opponent_score = score_for_sign(decision, actor_sign)
-    opponent = player_name(match, -actor_sign)
-    on_roll = player_name(match, cube.player)
-    on_roll_opponent = player_name(match, -cube.player)
-    on_roll_score, on_roll_opp_score = score_for_sign(decision, cube.player)
-    row_id = event_id(match.identity_hash, decision.game_number, decision.move_number, "take", actor)
+
+    # Cube-action rows are always displayed from the doubler's perspective:
+    # the cube-throwing side is black, and the responding side is white.
+    doubler_sign = cube.player
+    doubler = player_name(match, doubler_sign)
+    doubler_score, taker_score = score_for_sign(decision, doubler_sign)
+    row_id = event_id(match.identity_hash, decision.game_number, decision.move_number, "take", taker)
 
     return {
         "id": row_id,
-        "decisionType": "take",
-        "decisionLabel": "Take / Pass",
+        "decisionType": "cube",
+        "decisionLabel": "Cube Action",
         "classification": classification(loss, float(cfg["blunderThreshold"])),
         "errorLoss": loss,
-        "player": actor,
-        "opponent": opponent,
-        "onRollPlayer": on_roll,
-        "onRollOpponent": on_roll_opponent,
+        "player": doubler,
+        "opponent": taker,
+        "onRollPlayer": doubler,
+        "onRollOpponent": taker,
         "sourceFile": "",
         "matchId": match.identity_hash,
         "matchLength": match.header.match_length,
         "gameNumber": decision.game_number,
         "moveNumber": decision.move_number,
-        "playerScore": actor_score,
-        "opponentScore": opponent_score,
-        "onRollScore": on_roll_score,
-        "onRollOpponentScore": on_roll_opp_score,
+        "playerScore": doubler_score,
+        "opponentScore": taker_score,
+        "onRollScore": doubler_score,
+        "onRollOpponentScore": taker_score,
         "dice": "—",
         "diceValues": [],
         "playedAction": actual,
@@ -321,10 +328,10 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
         "cubeOwner": "center" if cube.cube_value == 0 else ("onRoll" if cube.cube_value > 0 else "opponent"),
         "position": list(cube.position.points),
         "candidates": [
-            {"rank": 1, "action": "Take", "equity": -cube.double_take_equity, **probability_fields(cube.double_take_analysis, invert=True)},
-            {"rank": 2, "action": "Pass", "equity": -cube.double_drop_equity, **probability_fields(None)},
+            {"rank": 1, "action": "Double/Take", "equity": cube.double_take_equity, **probability_fields(cube.double_take_analysis)},
+            {"rank": 2, "action": "Double/Pass", "equity": cube.double_drop_equity, **probability_fields(None)},
         ],
-        **probability_fields(actual_eval, invert=True),
+        **probability_fields(actual_eval),
         "matchDate": match.header.date.date().isoformat() if match.header.date else None,
     }
 
@@ -556,6 +563,12 @@ def build() -> None:
     for source in imported_files:
         match = xgread.read(source)
         games_by_number = {game.header.game_number: game for game in match.games}
+        crawford_game_numbers = {
+            game.header.game_number
+            for game in match.games
+            if game.header.crawford_apply
+        }
+        crawford_game_number = min(crawford_game_numbers) if crawford_game_numbers else None
         before = len(rows)
         for decision in match.decisions():
             event = decision.event
@@ -575,6 +588,10 @@ def build() -> None:
                     continue
                 game = games_by_number.get(decision.game_number)
                 row["isCrawford"] = bool(game and game.header.crawford_apply)
+                row["isPostCrawford"] = bool(
+                    crawford_game_number is not None
+                    and decision.game_number > crawford_game_number
+                )
                 row["sourceFile"] = source.name
                 if cfg["anonymizeOpponents"]:
                     row["opponent"] = "Opponent"

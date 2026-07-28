@@ -39,6 +39,7 @@ function formatPercent(value) {
 
 function awayText(position, away) {
   if (position.isCrawford && away === 1) return "Cr";
+  if (position.isPostCrawford && away === 1) return "PC";
   return `${away}a`;
 }
 
@@ -232,10 +233,9 @@ async function start() {
         opponentAway: Math.max(0, Number(position.matchLength) - Number(position.opponentScore)),
         blackPip: pips.black,
         whitePip: pips.white,
-        isCrawford: String(position.xgid || "").split(":")[6] === "1",
-        cubeSortValue: String(position.xgid || "").split(":")[6] === "1"
-          ? 0
-          : Number(position.cubeValue || 0),
+        isCrawford: Boolean(position.isCrawford),
+        isPostCrawford: Boolean(position.isPostCrawford),
+        cubeSortValue: position.isCrawford ? 0 : Number(position.cubeValue || 0),
       };
     });
     state.filtered = [...state.positions];
