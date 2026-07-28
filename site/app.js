@@ -228,7 +228,39 @@ function render() {
   });
 }
 
+function installOverscrollGuard() {
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+
+  document.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) return;
+    lastTouchX = event.touches[0].clientX;
+    lastTouchY = event.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    if (event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - lastTouchX;
+    const deltaY = touch.clientY - lastTouchY;
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
+
+    if (Math.abs(deltaY) <= Math.abs(deltaX)) return;
+
+    const scroller = document.scrollingElement || document.documentElement;
+    const atTop = scroller.scrollTop <= 0;
+    const atBottom = Math.ceil(scroller.scrollTop + scroller.clientHeight) >= scroller.scrollHeight;
+
+    if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+}
+
 function installEvents() {
+  installOverscrollGuard();
   elements.type.addEventListener("change", filterPositions);
 
   document.querySelectorAll("[data-sort-key]").forEach((button) => {
