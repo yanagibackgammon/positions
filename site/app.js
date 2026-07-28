@@ -42,46 +42,92 @@ function awayText(position, away) {
   return `${away}a`;
 }
 
-function scoreRow(label, score, away = null, position = null, labelClass = "") {
-  const awayMarkup = away == null || !position
-    ? '<span class="score-away"></span>'
-    : `<span class="score-away">(${escapeHTML(awayText(position, away))})</span>`;
+function cubeStateText(position) {
+  if (position.isCrawford) return "Cr";
+  if (position.cubeValue == null || position.cubeValue === "") return "—";
+  return String(position.cubeValue);
+}
+
+function normalizeRate(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Math.max(0, Math.min(1, num));
+}
+
+function pipCounts(position) {
+  const points = Array.isArray(position.position) ? position.position : [];
+  let black = 0;
+  let white = 0;
+
+  for (let point = 1; point <= 24; point += 1) {
+    const value = Number(points[point] || 0);
+    if (value > 0) black += value * point;
+    if (value < 0) white += Math.abs(value) * (25 - point);
+  }
+
+  black += Math.abs(Number(points[25] || 0)) * 25;
+  white += Math.abs(Number(points[0] || 0)) * 25;
+
+  return { black, white };
+}
+
+function scoreAwayMarkup(score, awayLabel) {
   return `
-    <div class="score-row">
-      <span class="score-label ${labelClass}">${escapeHTML(label)}</span>
-      <span class="score-number">${escapeHTML(score)}</span>
-      ${awayMarkup}
+    <span class="stat-value score-value">${escapeHTML(score)}</span>
+    <span class="stat-note">(${escapeHTML(awayLabel)})</span>`;
+}
+
+function statLine(label, valueMarkup, sideClass = "") {
+  return `
+    <div class="stat-line ${sideClass}">
+      <span class="stat-label">${escapeHTML(label)}</span>
+      <span class="stat-main">${valueMarkup}</span>
     </div>`;
 }
 
-function scoreCell(position) {
+function centerValueLine(valueMarkup, sideClass = "") {
   return `
-    <td class="score-cell">
-      <div class="score-stack">
-        ${scoreRow("ML", position.matchLength)}
-        ${scoreRow("BK", position.playerScore, position.playerAway, position, "label-bk")}
-        ${scoreRow("WH", position.opponentScore, position.opponentAway, position, "label-wh")}
+    <div class="stat-line ${sideClass}">
+      <span class="stat-main">${valueMarkup}</span>
+    </div>`;
+}
+
+function summaryCell(position) {
+  const blackWin = normalizeRate(position.winRate);
+  const blackGammon = normalizeRate(position.gammonWinRate);
+  const whiteWin = normalizeRate(position.loseRate);
+  const whiteGammon = normalizeRate(position.gammonLoseRate);
+
+  const blackWidth = blackWin == null ? 50 : blackWin * 100;
+  const whiteWidth = whiteWin == null ? Math.max(0, 100 - blackWidth) : whiteWin * 100;
+  const blackOverlay = blackGammon == null ? 0 : blackGammon * 100;
+  const whiteOverlay = whiteGammon == null ? 0 : whiteGammon * 100;
+
+  return `
+    <td class="summary-cell">
+      <div class="summary-top">
+        <div class="summary-side summary-black">
+          ${statLine("BLACK", scoreAwayMarkup(position.playerScore, awayText(position, position.playerAway)), "title-line")}
+          ${statLine("pip", `<span class="stat-value">${escapeHTML(position.blackPip)}</span>`)}
+          ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.winRate))}</span>`)}
+          ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonWinRate))}</span>`)}
+        </div>
+        <div class="summary-middle">
+          ${statLine("ML", `<span class="stat-value">${escapeHTML(position.matchLength)}</span>`, "center-line")}
+          ${centerValueLine(`<span class="stat-value">${escapeHTML(cubeStateText(position))}</span>`, "center-line cube-line")}
+        </div>
+        <div class="summary-side summary-white">
+          ${statLine("WHITE", scoreAwayMarkup(position.opponentScore, awayText(position, position.opponentAway)), "title-line")}
+          ${statLine("pip", `<span class="stat-value">${escapeHTML(position.whitePip)}</span>`)}
+          ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.loseRate))}</span>`)}
+          ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonLoseRate))}</span>`)}
+        </div>
       </div>
-    </td>`;
-}
-
-function rateRow(label, value) {
-  const empty = value == null || Number.isNaN(Number(value));
-  return `
-    <div class="rate-row">
-      <span class="rate-label">${escapeHTML(label)}</span>
-      <span class="rate-number ${empty ? "empty" : ""}">${formatPercent(value)}</span>
-    </div>`;
-}
-
-function ratesCell(position) {
-  return `
-    <td class="rates-cell">
-      <div class="rates-stack">
-        ${rateRow("W", position.winRate)}
-        ${rateRow("GW", position.gammonWinRate)}
-        ${rateRow("L", position.loseRate)}
-        ${rateRow("GL", position.gammonLoseRate)}
+      <div class="win-bar" aria-hidden="true">
+        <div class="win-black" style="width:${blackWidth.toFixed(3)}%"></div>
+        <div class="win-white" style="width:${whiteWidth.toFixed(3)}%"></div>
+        <div class="win-black-gammon" style="width:${Math.min(blackOverlay, blackWidth).toFixed(3)}%"></div>
+        <div class="win-white-gammon" style="width:${Math.min(whiteOverlay, whiteWidth).toFixed(3)}%"></div>
       </div>
     </td>`;
 }
@@ -95,8 +141,7 @@ function rowHTML(position) {
         </button>
       </td>
       <td class="action">${escapeHTML(position.bestAction)}</td>
-      ${scoreCell(position)}
-      ${ratesCell(position)}
+      ${summaryCell(position)}
     </tr>`;
 }
 
@@ -177,11 +222,17 @@ async function start() {
     const response = await fetch(`data/positions.json?v=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
-    state.positions = (payload.positions || []).map((position) => ({
-      ...position,
-      playerAway: Math.max(0, Number(position.matchLength) - Number(position.playerScore)),
-      opponentAway: Math.max(0, Number(position.matchLength) - Number(position.opponentScore)),
-    }));
+    state.positions = (payload.positions || []).map((position) => {
+      const pips = pipCounts(position);
+      return {
+        ...position,
+        playerAway: Math.max(0, Number(position.matchLength) - Number(position.playerScore)),
+        opponentAway: Math.max(0, Number(position.matchLength) - Number(position.opponentScore)),
+        blackPip: pips.black,
+        whitePip: pips.white,
+        isCrawford: String(position.xgid || "").split(":")[6] === "1",
+      };
+    });
     state.filtered = [...state.positions];
 
     const title = payload.meta?.title || "Backgammon Positions";
