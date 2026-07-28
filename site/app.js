@@ -5,11 +5,11 @@ const state = {
   filtered: [],
   sortKey: null,
   sortDirection: "asc",
+  baseTitle: "Backgammon",
 };
 
 const elements = {
   title: document.getElementById("page-title"),
-  positionCount: document.getElementById("position-count"),
   body: document.getElementById("positions-body"),
   empty: document.getElementById("empty-state"),
   type: document.getElementById("type-filter"),
@@ -108,7 +108,7 @@ function summaryCell(position) {
       <div class="summary-top">
         <div class="summary-side summary-black">
           ${statLine("BK", scoreAwayMarkup(position.playerScore, awayText(position, position.playerAway)), "title-line")}
-          ${statLine("pip", `<span class="stat-value">${escapeHTML(position.blackPip)}</span>`)}
+          ${statLine("PIP", `<span class="stat-value">${escapeHTML(position.blackPip)}</span>`)}
           ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.winRate))}</span>`)}
           ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonWinRate))}</span>`)}
         </div>
@@ -118,7 +118,7 @@ function summaryCell(position) {
         </div>
         <div class="summary-side summary-white">
           ${statLine("WH", scoreAwayMarkup(position.opponentScore, awayText(position, position.opponentAway)), "title-line")}
-          ${statLine("pip", `<span class="stat-value">${escapeHTML(position.whitePip)}</span>`)}
+          ${statLine("PIP", `<span class="stat-value">${escapeHTML(position.whitePip)}</span>`)}
           ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.loseRate))}</span>`)}
           ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonLoseRate))}</span>`)}
         </div>
@@ -175,7 +175,9 @@ function filterPositions() {
 function render() {
   const positions = sortedPositions();
   elements.body.innerHTML = positions.map(rowHTML).join("");
-  elements.positionCount.textContent = `${positions.length} positions`;
+  const pageTitle = `${state.baseTitle} ${positions.length} Positions`;
+  elements.title.textContent = pageTitle;
+  document.title = pageTitle;
   elements.empty.hidden = positions.length !== 0;
 
   document.querySelectorAll("[data-sort-key]").forEach((control) => {
@@ -231,13 +233,15 @@ async function start() {
         blackPip: pips.black,
         whitePip: pips.white,
         isCrawford: String(position.xgid || "").split(":")[6] === "1",
+        cubeSortValue: String(position.xgid || "").split(":")[6] === "1"
+          ? 0
+          : Number(position.cubeValue || 0),
       };
     });
     state.filtered = [...state.positions];
 
-    const title = payload.meta?.title || "Backgammon Positions";
-    document.title = title;
-    elements.title.textContent = title;
+    const configuredTitle = payload.meta?.title || "Backgammon Positions";
+    state.baseTitle = configuredTitle.replace(/\s+Positions$/i, "") || "Backgammon";
 
     const theme = payload.meta?.themeColor || "#B7924B";
     const [r, g, b] = toRgb(theme);
