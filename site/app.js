@@ -10,6 +10,7 @@ const state = {
 
 const elements = {
   title: document.getElementById("page-title"),
+  header: document.querySelector(".page-header"),
   body: document.getElementById("positions-body"),
   empty: document.getElementById("empty-state"),
   type: document.getElementById("type-filter"),
@@ -162,20 +163,35 @@ function formatError(value) {
 
 function actionCell(position) {
   const sourceCandidates = Array.isArray(position.candidates) ? position.candidates : [];
-  const candidates = sourceCandidates
+  const orderedCandidates = sourceCandidates
     .slice()
-    .sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0))
-    .slice(0, 3);
+    .sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0));
+  const candidates = orderedCandidates.slice(0, 3);
 
   if (!candidates.length) {
     candidates.push({ rank: 1, action: position.bestAction, equityLoss: 0 });
   }
 
+  const playedAction = String(position.playedAction || "").trim();
+  const playedIsVisible = candidates.some((candidate) => String(candidate.action || "").trim() === playedAction);
+  if (playedAction && !playedIsVisible) {
+    const playedCandidate = orderedCandidates.find(
+      (candidate) => String(candidate.action || "").trim() === playedAction,
+    );
+    candidates.push({
+      rank: playedCandidate?.rank ?? 4,
+      action: playedAction,
+      equityLoss: playedCandidate?.equityLoss ?? position.errorLoss,
+      isPlayedError: true,
+    });
+  }
+
   const rows = candidates.map((candidate, index) => {
     const isBest = index === 0 || Number(candidate.rank) === 1;
     const error = isBest ? "" : formatError(candidate.equityLoss);
+    const playedClass = candidate.isPlayedError ? " is-played-error" : "";
     return `
-      <div class="action-option ${isBest ? "is-best" : ""}">
+      <div class="action-option ${isBest ? "is-best" : ""}${playedClass}">
         <span class="action-text">${escapeHTML(candidate.action || "—")}</span>
         <span class="action-error">${escapeHTML(error)}</span>
       </div>`;
@@ -259,9 +275,68 @@ function installOverscrollGuard() {
   }, { passive: false });
 }
 
+function installMobileHeaderBehavior() {
+  const mobileQuery = window.matchMedia("(max-width: 760px)");
+  let lastScrollY = window.scrollY;
+  let ticking = false;
+
+  const setTitleVisible = (visible) => {
+    document.body.classList.toggle("mobile-title-visible", visible);
+    document.body.classList.toggle("mobile-title-hidden", !visible);
+  };
+
+  const update = () => {
+    const currentScrollY = Math.max(0, window.scrollY);
+    if (!mobileQuery.matches) {
+      document.body.classList.remove("mobile-title-visible", "mobile-title-hidden");
+      lastScrollY = currentScrollY;
+      ticking = false;
+      return;
+    }
+
+    const delta = currentScrollY - lastScrollY;
+    if (currentScrollY <= 2 || delta < -6) {
+      setTitleVisible(true);
+    } else if (delta > 6 && currentScrollY > 32) {
+      setTitleVisible(false);
+    }
+
+    lastScrollY = currentScrollY;
+    ticking = false;
+  };
+
+  const requestUpdate = () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(update);
+  };
+
+  if (mobileQuery.matches) {
+    setTitleVisible(true);
+  } else {
+    document.body.classList.remove("mobile-title-visible", "mobile-title-hidden");
+  }
+  window.addEventListener("scroll", requestUpdate, { passive: true });
+  mobileQuery.addEventListener?.("change", requestUpdate);
+}
+
+function scrollToTopFromTitle() {
+  document.body.classList.add("mobile-title-visible");
+  document.body.classList.remove("mobile-title-hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 function installEvents() {
   installOverscrollGuard();
+  installMobileHeaderBehavior();
   elements.type.addEventListener("change", filterPositions);
+  elements.title.addEventListener("click", scrollToTopFromTitle);
+  elements.title.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      scrollToTopFromTitle();
+    }
+  });
 
   document.querySelectorAll("[data-sort-key]").forEach((button) => {
     button.addEventListener("click", () => {
