@@ -15,6 +15,7 @@ const elements = {
   type: document.getElementById("type-filter"),
   dialog: document.getElementById("board-dialog"),
   dialogImage: document.getElementById("dialog-image"),
+  dialogSource: document.getElementById("dialog-source"),
   dialogClose: document.getElementById("dialog-close"),
 };
 
@@ -137,7 +138,7 @@ function rowHTML(position) {
   return `
     <tr class="main-row">
       <td class="board-cell">
-        <button class="board-button" type="button" data-board="${escapeHTML(position.boardImage)}" aria-label="盤面を拡大">
+        <button class="board-button" type="button" data-board="${escapeHTML(position.boardImage)}" data-source="${escapeHTML(position.sourceFile || "")}" aria-label="盤面を拡大">
           <img src="${escapeHTML(position.boardImage)}" alt="${escapeHTML(position.id)} の盤面" loading="lazy">
         </button>
       </td>
@@ -210,6 +211,7 @@ function installEvents() {
     const boardButton = event.target.closest("[data-board]");
     if (boardButton) {
       elements.dialogImage.src = boardButton.dataset.board;
+      elements.dialogSource.textContent = boardButton.dataset.source || "";
       elements.dialog.showModal();
     }
   });
