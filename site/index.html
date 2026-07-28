@@ -13,25 +13,25 @@
       <h1 id="page-title">Backgammon 0 Positions</h1>
       <span class="creator">Created by YANAGI Backgammon</span>
     </div>
-    <div class="header-filter">
-      <select id="type-filter" aria-label="Position type filter">
-        <option value="">All</option>
-        <option value="checker">Checker Play</option>
-        <option value="double">Double Decision</option>
-        <option value="take">Take / Pass</option>
-      </select>
-    </div>
   </header>
 
   <nav class="sort-toolbar-wrap" aria-label="Sort positions">
     <div class="sort-toolbar">
+      <div class="toolbar-filter">
+        <select id="type-filter" aria-label="Position type filter">
+          <option value="">All</option>
+          <option value="checker">Checker Play</option>
+          <option value="double">Double Decision</option>
+          <option value="take">Take / Pass</option>
+        </select>
+      </div>
       <button class="sort-button sort-black" type="button" data-sort-key="playerAway" data-sort-type="number">BK<span class="sort-indicator"></span></button>
       <button class="sort-button sort-black" type="button" data-sort-key="blackPip" data-sort-type="number">PIP<span class="sort-indicator"></span></button>
       <button class="sort-button sort-black" type="button" data-sort-key="winRate" data-sort-type="number">W<span class="sort-indicator"></span></button>
       <button class="sort-button sort-black" type="button" data-sort-key="gammonWinRate" data-sort-type="number">G<span class="sort-indicator"></span></button>
 
       <button class="sort-button sort-gold" type="button" data-sort-key="matchLength" data-sort-type="number">ML<span class="sort-indicator"></span></button>
-      <button class="sort-button sort-gold" type="button" data-sort-key="cubeSortValue" data-sort-type="number">CUBE<span class="sort-indicator"></span></button>
+      <button class="sort-button sort-gold" type="button" data-sort-key="cubeSortValue" data-sort-type="number">CB<span class="sort-indicator"></span></button>
 
       <button class="sort-button sort-white" type="button" data-sort-key="opponentAway" data-sort-type="number">WH<span class="sort-indicator"></span></button>
       <button class="sort-button sort-white" type="button" data-sort-key="whitePip" data-sort-type="number">PIP<span class="sort-indicator"></span></button>

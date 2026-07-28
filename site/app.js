@@ -114,7 +114,7 @@ function summaryCell(position) {
         </div>
         <div class="summary-middle">
           ${statLine("ML", `<span class="stat-value">${escapeHTML(position.matchLength)}</span>`, "center-line")}
-          ${statLine("CUBE", `<span class="stat-value">${escapeHTML(cubeStateText(position))}</span>`, "center-line cube-line")}
+          ${statLine("CB", `<span class="stat-value">${escapeHTML(cubeStateText(position))}</span>`, "center-line cube-line")}
         </div>
         <div class="summary-side summary-white">
           ${statLine("WH", scoreAwayMarkup(position.opponentScore, awayText(position, position.opponentAway)), "title-line")}
