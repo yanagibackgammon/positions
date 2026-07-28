@@ -107,17 +107,17 @@ function summaryCell(position) {
     <td class="summary-cell">
       <div class="summary-top">
         <div class="summary-side summary-black">
-          ${statLine("BLACK", scoreAwayMarkup(position.playerScore, awayText(position, position.playerAway)), "title-line")}
+          ${statLine("BK", scoreAwayMarkup(position.playerScore, awayText(position, position.playerAway)), "title-line")}
           ${statLine("pip", `<span class="stat-value">${escapeHTML(position.blackPip)}</span>`)}
           ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.winRate))}</span>`)}
           ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonWinRate))}</span>`)}
         </div>
         <div class="summary-middle">
           ${statLine("ML", `<span class="stat-value">${escapeHTML(position.matchLength)}</span>`, "center-line")}
-          ${centerValueLine(`<span class="stat-value">${escapeHTML(cubeStateText(position))}</span>`, "center-line cube-line")}
+          ${statLine("CUBE", `<span class="stat-value">${escapeHTML(cubeStateText(position))}</span>`, "center-line cube-line")}
         </div>
         <div class="summary-side summary-white">
-          ${statLine("WHITE", scoreAwayMarkup(position.opponentScore, awayText(position, position.opponentAway)), "title-line")}
+          ${statLine("WH", scoreAwayMarkup(position.opponentScore, awayText(position, position.opponentAway)), "title-line")}
           ${statLine("pip", `<span class="stat-value">${escapeHTML(position.whitePip)}</span>`)}
           ${statLine("W", `<span class="stat-value">${escapeHTML(formatPercent(position.loseRate))}</span>`)}
           ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonLoseRate))}</span>`)}
