@@ -404,6 +404,15 @@ tbody tr.main-row:last-child td { border-bottom: 0; }
   transform: translateX(-50%);
   white-space: nowrap;
 }
+.win-scale .win-boundary-marker {
+  top: auto;
+  bottom: -2px;
+  z-index: 7;
+  color: var(--theme);
+  font-size: 10px;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .8);
+}
 .win-bar {
   position: relative;
   display: flex;
@@ -446,17 +455,6 @@ tbody tr.main-row:last-child td { border-bottom: 0; }
   bottom: 0;
   z-index: 2;
   background: #f0c561;
-}
-.win-divider {
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  z-index: 6;
-  width: 2px;
-  transform: translateX(-1px);
-  background: #b7924b;
-  box-shadow: -1px 0 0 rgba(255, 255, 255, .85), 1px 0 0 rgba(0, 0, 0, .9);
-  pointer-events: none;
 }
 
 .empty-state {

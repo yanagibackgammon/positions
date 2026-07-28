@@ -111,6 +111,32 @@ def cube_value_number(cube_value: int) -> int:
     return 1 if cube_value == 0 else 2 ** abs(cube_value)
 
 
+def position_for_view(points: tuple[int, ...] | list[int], black_sign: int) -> list[int]:
+    """Return a board normalized so the selected player is black/on-roll.
+
+    xgread stores point signs from player 1's perspective.  When player 2 is
+    shown as black, reverse the point numbers, swap the bars, and invert signs.
+    """
+    source = [int(value) for value in points]
+    if black_sign == 1:
+        return source
+
+    flipped = [0] * 26
+    flipped[0] = -source[25]
+    flipped[25] = -source[0]
+    for point in range(1, 25):
+        flipped[point] = -source[25 - point]
+    return flipped
+
+
+def cube_owner_for_view(cube_value: int, black_sign: int) -> str:
+    """Map XG's player-relative cube sign to the displayed black/white view."""
+    if cube_value == 0:
+        return "center"
+    owner_sign = 1 if cube_value > 0 else -1
+    return "onRoll" if owner_sign == black_sign else "opponent"
+
+
 def compact_move_notation(notation: str) -> str:
     """Collapse repeated identical checker moves, e.g. 8/4 8/4 8/4 -> 8/4(3)."""
     tokens = str(notation).split()
@@ -226,8 +252,8 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
         "bestAction": best_action,
         "xgid": decision.xgid,
         "cubeValue": cube_value_number(move.cube_value),
-        "cubeOwner": "center" if move.cube_value == 0 else ("onRoll" if move.cube_value > 0 else "opponent"),
-        "position": list(move.position_before.points),
+        "cubeOwner": cube_owner_for_view(move.cube_value, move.player),
+        "position": position_for_view(move.position_before.points, move.player),
         "candidates": candidate_payload(move),
         **probability_fields(actual_evaluation),
         "matchDate": match.header.date.date().isoformat() if match.header.date else None,
@@ -292,8 +318,10 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
         "bestAction": best_double_action(cube),
         "xgid": decision.xgid,
         "cubeValue": cube_value_number(cube.cube_value),
-        "cubeOwner": "center" if cube.cube_value == 0 else ("onRoll" if cube.cube_value > 0 else "opponent"),
-        "position": list(cube.position.points),
+        # A legal cube action can only be made with the cube centered or owned
+        # by the doubler, who is always displayed as black.
+        "cubeOwner": "center" if cube.cube_value == 0 else "onRoll",
+        "position": position_for_view(cube.position.points, actor_sign),
         "candidates": ranked_cube_candidates(
             [
                 ("No Double", cube.no_double_equity, cube.no_double_analysis),
@@ -357,8 +385,10 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
         "bestAction": best,
         "xgid": decision.xgid,
         "cubeValue": cube_value_number(cube.cube_value),
-        "cubeOwner": "center" if cube.cube_value == 0 else ("onRoll" if cube.cube_value > 0 else "opponent"),
-        "position": list(cube.position.points),
+        # Take decisions are displayed from the doubler's perspective.  The
+        # board must be flipped as well when the doubler is player 2.
+        "cubeOwner": "center" if cube.cube_value == 0 else "onRoll",
+        "position": position_for_view(cube.position.points, doubler_sign),
         "candidates": ranked_cube_candidates(
             [
                 ("Double/Take", cube.double_take_equity, cube.double_take_analysis),
@@ -378,9 +408,8 @@ def svg_text(text: str) -> str:
 def render_board_svg(row: dict[str, Any]) -> str:
     """Render a clean monochrome bgLog/Minstrels-inspired board diagram.
 
-    The position is always viewed from the on-roll player's perspective:
-    positive checkers are the on-roll side and are drawn in black; negative
-    checkers are the opponent and are drawn in white.
+    Rows are normalized before rendering: positive checkers are the displayed
+    black side and negative checkers are the displayed white side.
     """
     width, height = 690, 546
     board_top, board_bottom = 28, 518

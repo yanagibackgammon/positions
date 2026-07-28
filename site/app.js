@@ -129,13 +129,13 @@ function summaryCell(position) {
         <span style="left:30%">30%</span>
         <span style="left:50%">50%</span>
         <span style="left:70%">70%</span>
+        <span class="win-boundary-marker" style="left:${blackWidth.toFixed(3)}%">▼</span>
       </div>
       <div class="win-bar" aria-hidden="true">
         <div class="win-black" style="width:${blackWidth.toFixed(3)}%"></div>
         <div class="win-white" style="width:${whiteWidth.toFixed(3)}%"></div>
         <div class="win-black-gammon" style="width:${Math.min(blackOverlay, blackWidth).toFixed(3)}%"></div>
         <div class="win-white-gammon" style="width:${Math.min(whiteOverlay, whiteWidth).toFixed(3)}%"></div>
-        <div class="win-divider" style="left:${blackWidth.toFixed(3)}%"></div>
       </div>
     </td>`;
 }
