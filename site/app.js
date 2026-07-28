@@ -9,7 +9,7 @@ const state = {
 
 const elements = {
   title: document.getElementById("page-title"),
-  boardHeader: document.getElementById("board-header"),
+  positionCount: document.getElementById("position-count"),
   body: document.getElementById("positions-body"),
   empty: document.getElementById("empty-state"),
   type: document.getElementById("type-filter"),
@@ -37,47 +37,65 @@ function formatPercent(value) {
   return value == null || Number.isNaN(Number(value)) ? "—" : `${(Number(value) * 100).toFixed(1)}%`;
 }
 
-function rateValue(value) {
+function awayText(position, away) {
+  if (position.isCrawford && away === 1) return "Cr";
+  return `${away}a`;
+}
+
+function scoreRow(label, score, away = null, position = null, labelClass = "") {
+  const awayMarkup = away == null || !position
+    ? '<span class="score-away"></span>'
+    : `<span class="score-away">(${escapeHTML(awayText(position, away))})</span>`;
+  return `
+    <div class="score-row">
+      <span class="score-label ${labelClass}">${escapeHTML(label)}</span>
+      <span class="score-number">${escapeHTML(score)}</span>
+      ${awayMarkup}
+    </div>`;
+}
+
+function scoreCell(position) {
+  return `
+    <td class="score-cell">
+      <div class="score-stack">
+        ${scoreRow("ML", position.matchLength)}
+        ${scoreRow("BK", position.playerScore, position.playerAway, position, "label-bk")}
+        ${scoreRow("WH", position.opponentScore, position.opponentAway, position, "label-wh")}
+      </div>
+    </td>`;
+}
+
+function rateRow(label, value) {
   const empty = value == null || Number.isNaN(Number(value));
-  return `<span class="rate-value ${empty ? "empty" : ""}">${formatPercent(value)}</span>`;
+  return `
+    <div class="rate-row">
+      <span class="rate-label">${escapeHTML(label)}</span>
+      <span class="rate-number ${empty ? "empty" : ""}">${formatPercent(value)}</span>
+    </div>`;
 }
 
 function ratesCell(position) {
   return `
     <td class="rates-cell">
-      <div class="rates-value-grid">
-        ${rateValue(position.winRate)}
-        ${rateValue(position.gammonWinRate)}
-        ${rateValue(position.loseRate)}
-        ${rateValue(position.gammonLoseRate)}
+      <div class="rates-stack">
+        ${rateRow("W", position.winRate)}
+        ${rateRow("GW", position.gammonWinRate)}
+        ${rateRow("L", position.loseRate)}
+        ${rateRow("GL", position.gammonLoseRate)}
       </div>
     </td>`;
-}
-
-function awayLabel(position, away) {
-  if (position.isCrawford && away === 1) return "Crawford";
-  return `${away}away`;
-}
-
-function scoreCell(value, away = null, position = null) {
-  const sub = away == null || !position
-    ? ""
-    : `<span class="score-away ${position.isCrawford && away === 1 ? "crawford" : ""}">${awayLabel(position, away)}</span>`;
-  return `<td><div class="score-value">${escapeHTML(value)}</div>${sub}</td>`;
 }
 
 function rowHTML(position) {
   return `
     <tr class="main-row">
-      <td>
+      <td class="board-cell">
         <button class="board-button" type="button" data-board="${escapeHTML(position.boardImage)}" aria-label="盤面を拡大">
           <img src="${escapeHTML(position.boardImage)}" alt="${escapeHTML(position.id)} の盤面" loading="lazy">
         </button>
       </td>
       <td class="action">${escapeHTML(position.bestAction)}</td>
-      ${scoreCell(position.matchLength)}
-      ${scoreCell(position.playerScore, position.playerAway, position)}
-      ${scoreCell(position.opponentScore, position.opponentAway, position)}
+      ${scoreCell(position)}
       ${ratesCell(position)}
     </tr>`;
 }
@@ -112,7 +130,7 @@ function filterPositions() {
 function render() {
   const positions = sortedPositions();
   elements.body.innerHTML = positions.map(rowHTML).join("");
-  elements.boardHeader.textContent = `${positions.length} positions`;
+  elements.positionCount.textContent = `${positions.length} positions`;
   elements.empty.hidden = positions.length !== 0;
 
   document.querySelectorAll("[data-sort-key]").forEach((control) => {

@@ -23,27 +23,30 @@
     </div>
   </header>
 
+  <nav class="sort-toolbar-wrap" aria-label="Sort positions">
+    <div class="sort-toolbar">
+      <span id="position-count" class="position-count">0 positions</span>
+      <button class="sort-button" type="button" data-sort-key="bestAction" data-sort-type="text">BEST<span class="sort-indicator"></span></button>
+      <button class="sort-button" type="button" data-sort-key="matchLength" data-sort-type="number">ML<span class="sort-indicator"></span></button>
+      <button class="sort-button sort-bk" type="button" data-sort-key="playerAway" data-sort-type="number">BK<span class="sort-indicator"></span></button>
+      <button class="sort-button sort-wh" type="button" data-sort-key="opponentAway" data-sort-type="number">WH<span class="sort-indicator"></span></button>
+      <button class="sort-button" type="button" data-sort-key="winRate" data-sort-type="number">W<span class="sort-indicator"></span></button>
+      <button class="sort-button" type="button" data-sort-key="gammonWinRate" data-sort-type="number">GW<span class="sort-indicator"></span></button>
+      <button class="sort-button" type="button" data-sort-key="loseRate" data-sort-type="number">L<span class="sort-indicator"></span></button>
+      <button class="sort-button" type="button" data-sort-key="gammonLoseRate" data-sort-type="number">GL<span class="sort-indicator"></span></button>
+    </div>
+  </nav>
+
   <main>
     <section class="table-card">
       <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th class="board-column" id="board-header">0 positions</th>
-              <th><button type="button" data-sort-key="bestAction" data-sort-type="text">BEST<span class="sort-indicator"></span></button></th>
-              <th><button type="button" data-sort-key="matchLength" data-sort-type="number" title="Match Length">ML<span class="sort-indicator"></span></button></th>
-              <th><button type="button" data-sort-key="playerAway" data-sort-type="number" title="You">YOU<span class="sort-indicator"></span></button></th>
-              <th><button type="button" data-sort-key="opponentAway" data-sort-type="number" title="Opponent">OPP<span class="sort-indicator"></span></button></th>
-              <th class="rates-header">
-                <div class="rates-sort-grid" aria-label="Rates sort controls">
-                  <button type="button" data-sort-key="winRate" data-sort-type="number" title="Win Rate">W%<span class="sort-indicator"></span></button>
-                  <button type="button" data-sort-key="gammonWinRate" data-sort-type="number" title="Gammon Win Rate">GW%<span class="sort-indicator"></span></button>
-                  <button type="button" data-sort-key="loseRate" data-sort-type="number" title="Lose Rate">L%<span class="sort-indicator"></span></button>
-                  <button type="button" data-sort-key="gammonLoseRate" data-sort-type="number" title="Gammon Lose Rate">GL%<span class="sort-indicator"></span></button>
-                </div>
-              </th>
-            </tr>
-          </thead>
+        <table aria-label="Backgammon positions">
+          <colgroup>
+            <col class="board-col">
+            <col class="best-col">
+            <col class="score-col">
+            <col class="rates-col">
+          </colgroup>
           <tbody id="positions-body"></tbody>
         </table>
       </div>
