@@ -37,9 +37,21 @@ function formatPercent(value) {
   return value == null || Number.isNaN(Number(value)) ? "—" : `${(Number(value) * 100).toFixed(1)}%`;
 }
 
-function numericCell(value) {
+function rateValue(value) {
   const empty = value == null || Number.isNaN(Number(value));
-  return `<td class="number ${empty ? "empty" : ""}">${formatPercent(value)}</td>`;
+  return `<span class="rate-value ${empty ? "empty" : ""}">${formatPercent(value)}</span>`;
+}
+
+function ratesCell(position) {
+  return `
+    <td class="rates-cell">
+      <div class="rates-value-grid">
+        ${rateValue(position.winRate)}
+        ${rateValue(position.gammonWinRate)}
+        ${rateValue(position.loseRate)}
+        ${rateValue(position.gammonLoseRate)}
+      </div>
+    </td>`;
 }
 
 function awayLabel(position, away) {
@@ -66,10 +78,7 @@ function rowHTML(position) {
       ${scoreCell(position.matchLength)}
       ${scoreCell(position.playerScore, position.playerAway, position)}
       ${scoreCell(position.opponentScore, position.opponentAway, position)}
-      ${numericCell(position.winRate)}
-      ${numericCell(position.gammonWinRate)}
-      ${numericCell(position.loseRate)}
-      ${numericCell(position.gammonLoseRate)}
+      ${ratesCell(position)}
     </tr>`;
 }
 
@@ -87,8 +96,8 @@ function compareValues(a, b, key, type) {
 
 function sortedPositions() {
   if (!state.sortKey) return [...state.filtered];
-  const heading = document.querySelector(`th[data-key="${CSS.escape(state.sortKey)}"]`);
-  const type = heading?.dataset.type || "text";
+  const control = document.querySelector(`[data-sort-key="${CSS.escape(state.sortKey)}"]`);
+  const type = control?.dataset.sortType || "text";
   return [...state.filtered].sort((a, b) => {
     const result = compareValues(a, b, state.sortKey, type);
     return state.sortDirection === "asc" ? result : -result;
@@ -106,11 +115,11 @@ function render() {
   elements.boardHeader.textContent = `${positions.length} positions`;
   elements.empty.hidden = positions.length !== 0;
 
-  document.querySelectorAll("th[data-key]").forEach((heading) => {
-    heading.classList.remove("is-sorted", "desc");
-    if (heading.dataset.key === state.sortKey) {
-      heading.classList.add("is-sorted");
-      if (state.sortDirection === "desc") heading.classList.add("desc");
+  document.querySelectorAll("[data-sort-key]").forEach((control) => {
+    control.classList.remove("is-sorted", "desc");
+    if (control.dataset.sortKey === state.sortKey) {
+      control.classList.add("is-sorted");
+      if (state.sortDirection === "desc") control.classList.add("desc");
     }
   });
 }
@@ -118,10 +127,9 @@ function render() {
 function installEvents() {
   elements.type.addEventListener("change", filterPositions);
 
-  document.querySelectorAll("th[data-key] button").forEach((button) => {
+  document.querySelectorAll("[data-sort-key]").forEach((button) => {
     button.addEventListener("click", () => {
-      const heading = button.closest("th");
-      const key = heading.dataset.key;
+      const key = button.dataset.sortKey;
       if (state.sortKey === key) {
         state.sortDirection = state.sortDirection === "asc" ? "desc" : "asc";
       } else {
