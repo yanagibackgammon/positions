@@ -7,7 +7,7 @@
   --text: #f3efe6;
   --muted: #aeb7bc;
   --table-gold: #755824;
-  --header-height: 62px;
+  --header-height: 54px;
   --toolbar-height: 58px;
 }
 
@@ -73,6 +73,13 @@ h1 {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .025em;
+  text-decoration: none;
+}
+.creator:hover,
+.creator:focus-visible {
+  color: var(--theme);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .sort-toolbar-wrap {
@@ -106,7 +113,7 @@ h1 {
 }
 .toolbar-filter select {
   height: 40px;
-  min-width: 190px;
+  min-width: 170px;
   border: 1px solid #3d484e;
   border-radius: 10px;
   color: #fff;
@@ -543,11 +550,12 @@ dialog::backdrop { background: rgba(0, 0, 0, .72); }
 
 @media (max-width: 760px) {
   :root {
-    --header-height: 72px;
+    --header-height: 60px;
     --toolbar-height: 58px;
   }
   .page-header {
-    padding: 6px 12px;
+    position: relative;
+    padding: 4px 12px;
   }
   .title-group {
     width: 100%;
@@ -566,6 +574,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .72); }
     font-size: 10px;
   }
   .sort-toolbar-wrap {
+    top: 0;
     padding: 8px 10px;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
@@ -577,7 +586,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .72); }
     gap: 7px;
   }
   .toolbar-filter select {
-    min-width: 152px;
+    min-width: 145px;
   }
   main {
     width: calc(100% - 16px);
