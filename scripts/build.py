@@ -132,17 +132,46 @@ def compact_move_notation(notation: str) -> str:
 
 
 def candidate_payload(move: Move) -> list[dict[str, Any]]:
+    """Return checker candidates in true best-to-worst equity-loss order."""
+    ordered = sorted(move.candidates, key=lambda candidate: float(candidate.equity_loss))
     rows: list[dict[str, Any]] = []
-    for rank, candidate in enumerate(move.candidates, start=1):
+    for rank, candidate in enumerate(ordered, start=1):
         rows.append(
             {
                 "rank": rank,
                 "action": compact_move_notation(xgread.format_moves(candidate.moves, move.position_before)),
-                "equityLoss": candidate.equity_loss,
+                "equityLoss": max(0.0, float(candidate.equity_loss)),
                 **probability_fields(candidate.evaluation),
             }
         )
     return rows
+
+
+def ranked_cube_candidates(
+    candidates: list[tuple[str, float, Evaluation | None]],
+    best_action: str,
+) -> list[dict[str, Any]]:
+    """Rank cube outcomes with the selected best action first and add error values."""
+    normalized: list[dict[str, Any]] = []
+    for action, equity, evaluation in candidates:
+        fields = probability_fields(evaluation)
+        fields["equity"] = float(equity)
+        normalized.append({"action": action, **fields})
+
+    best = next((row for row in normalized if row["action"] == best_action), normalized[0])
+    best_equity = float(best["equity"])
+    normalized.sort(
+        key=lambda row: (
+            0 if row["action"] == best_action else 1,
+            abs(best_equity - float(row["equity"])),
+            row["action"],
+        )
+    )
+
+    for rank, row in enumerate(normalized, start=1):
+        row["rank"] = rank
+        row["equityLoss"] = 0.0 if rank == 1 else abs(best_equity - float(row["equity"]))
+    return normalized
 
 
 def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any]) -> dict[str, Any] | None:
@@ -265,11 +294,14 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
         "cubeValue": cube_value_number(cube.cube_value),
         "cubeOwner": "center" if cube.cube_value == 0 else ("onRoll" if cube.cube_value > 0 else "opponent"),
         "position": list(cube.position.points),
-        "candidates": [
-            {"rank": 1, "action": "No Double", "equity": cube.no_double_equity, **probability_fields(cube.no_double_analysis)},
-            {"rank": 2, "action": "Double / Take", "equity": cube.double_take_equity, **probability_fields(cube.double_take_analysis)},
-            {"rank": 3, "action": "Double / Pass", "equity": cube.double_drop_equity, **probability_fields(None)},
-        ],
+        "candidates": ranked_cube_candidates(
+            [
+                ("No Double", cube.no_double_equity, cube.no_double_analysis),
+                ("Double/Take", cube.double_take_equity, cube.double_take_analysis),
+                ("Double/Pass", cube.double_drop_equity, None),
+            ],
+            best_double_action(cube),
+        ),
         **probability_fields(actual_eval),
         "matchDate": match.header.date.date().isoformat() if match.header.date else None,
     }
@@ -327,10 +359,13 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
         "cubeValue": cube_value_number(cube.cube_value),
         "cubeOwner": "center" if cube.cube_value == 0 else ("onRoll" if cube.cube_value > 0 else "opponent"),
         "position": list(cube.position.points),
-        "candidates": [
-            {"rank": 1, "action": "Double/Take", "equity": cube.double_take_equity, **probability_fields(cube.double_take_analysis)},
-            {"rank": 2, "action": "Double/Pass", "equity": cube.double_drop_equity, **probability_fields(None)},
-        ],
+        "candidates": ranked_cube_candidates(
+            [
+                ("Double/Take", cube.double_take_equity, cube.double_take_analysis),
+                ("Double/Pass", cube.double_drop_equity, None),
+            ],
+            best,
+        ),
         **probability_fields(actual_eval),
         "matchDate": match.header.date.date().isoformat() if match.header.date else None,
     }

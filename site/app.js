@@ -125,11 +125,17 @@ function summaryCell(position) {
           ${statLine("G", `<span class="stat-value">${escapeHTML(formatPercent(position.gammonLoseRate))}</span>`)}
         </div>
       </div>
+      <div class="win-scale" aria-hidden="true">
+        <span style="left:30%">30%</span>
+        <span style="left:50%">50%</span>
+        <span style="left:70%">70%</span>
+      </div>
       <div class="win-bar" aria-hidden="true">
         <div class="win-black" style="width:${blackWidth.toFixed(3)}%"></div>
         <div class="win-white" style="width:${whiteWidth.toFixed(3)}%"></div>
         <div class="win-black-gammon" style="width:${Math.min(blackOverlay, blackWidth).toFixed(3)}%"></div>
         <div class="win-white-gammon" style="width:${Math.min(whiteOverlay, whiteWidth).toFixed(3)}%"></div>
+        <div class="win-divider" style="left:${blackWidth.toFixed(3)}%"></div>
       </div>
     </td>`;
 }
@@ -142,9 +148,40 @@ function rowHTML(position) {
           <img src="${escapeHTML(position.boardImage)}" alt="${escapeHTML(position.id)} の盤面" loading="lazy">
         </button>
       </td>
-      <td class="action">${escapeHTML(position.bestAction)}</td>
+      ${actionCell(position)}
       ${summaryCell(position)}
     </tr>`;
+}
+
+
+function formatError(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
+  return `−${Math.abs(number).toFixed(3)}`;
+}
+
+function actionCell(position) {
+  const sourceCandidates = Array.isArray(position.candidates) ? position.candidates : [];
+  const candidates = sourceCandidates
+    .slice()
+    .sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0))
+    .slice(0, 3);
+
+  if (!candidates.length) {
+    candidates.push({ rank: 1, action: position.bestAction, equityLoss: 0 });
+  }
+
+  const rows = candidates.map((candidate, index) => {
+    const isBest = index === 0 || Number(candidate.rank) === 1;
+    const error = isBest ? "" : formatError(candidate.equityLoss);
+    return `
+      <div class="action-option ${isBest ? "is-best" : ""}">
+        <span class="action-text">${escapeHTML(candidate.action || "—")}</span>
+        <span class="action-error">${escapeHTML(error)}</span>
+      </div>`;
+  }).join("");
+
+  return `<td class="action-cell"><div class="action-list">${rows}</div></td>`;
 }
 
 function compareValues(a, b, key, type) {
