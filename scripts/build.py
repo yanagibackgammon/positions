@@ -397,10 +397,16 @@ def cube_response(cube: CubeAction) -> str:
 
 
 def non_double_action(cube: CubeAction) -> str:
-    """Return the best no-cube label, preserving XG's Too good distinction."""
+    """Return the best no-cube label, preserving XG's Too Good distinction.
+
+    No Double and Too Good both decline to turn the cube.  XG distinguishes
+    Too Good when playing on has more equity than cashing the game at the
+    Double/Pass value.  The opponent's optimal response determines whether the
+    displayed suffix is Take or Pass, including the rare Too Good/Take case.
+    """
     response = cube_response(cube)
-    if cube.no_double_equity > cube.double_drop_equity + 1e-12:
-        return f"Too good/{response}"
+    if float(cube.no_double_equity) > float(cube.double_drop_equity) + 1e-12:
+        return f"Too Good/{response}"
     return cube_action_labels(cube)["no_offer"]
 
 
@@ -494,7 +500,11 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
 
     labels = cube_action_labels(cube)
     actual = labels["take"] if cube.took else labels["pass"]
-    best = labels["take"] if cube.double_take_equity < cube.double_drop_equity else labels["pass"]
+    # Even though the recorded error belongs to the responder, the combined
+    # Cube Action row is displayed from the doubler's perspective.  Its bold
+    # heading must therefore show the best decision for the whole cube action,
+    # including No Double and Too Good outcomes.
+    best = best_double_action(cube)
     # A terminal Pass has no separate probability vector.  The Double/Take
     # analysis describes the same pre-response board and supplies W/GW/L/GL.
     actual_eval = first_available_evaluation(

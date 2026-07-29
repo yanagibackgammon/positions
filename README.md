@@ -125,8 +125,8 @@ Double/Pass
 - `Double/Take`は「Double/TakeのEquity − Double/PassのEquity」です。
 - `Double/Pass`は基準行のため数値を表示しません。
 - 正の差には`+`、負の差には`−`を付けます。
-- 最善アクションは`Double/Take`、`Double/Pass`、`No Double`、`Too good/Take`、`Too good/Pass`のいずれかです。
-- `Too good/...`は最上段の最善アクションとして表示し、下の3結果は比較用として`No Double / Double/Take / Double/Pass`を維持します。
+- 最善アクションは`Double/Take`、`Double/Pass`、`No Double`、`Too Good/Take`、`Too Good/Pass`のいずれかです。
+- `Too Good/...`は最上段の最善アクションとして表示し、下の3結果は比較用として`No Double / Double/Take / Double/Pass`を維持します。
 
 キューブがすでにBK側にあり、リダブル判断となる場合はXGに合わせて次の表記へ切り替えます。
 
@@ -145,8 +145,9 @@ Take / Passのエラー対象者は応手側ですが、表示はキューブを
 - Take / Passを判断した側を`WH`として表示します。
 - 盤面、チェッカー色、スコア、PIP、勝率をダブラー側の視点へ反転します。
 - ダブラーが元棋譜のPlayer 2の場合も、盤面そのものを反転します。
-- 最上段の最善アクションは`Double/Take`または`Double/Pass`です。
+- 最上段は応手だけではなく、局面全体の最善キューブ判断を表示します。`No Double`、`Double/Take`、`Double/Pass`、`Too Good/Take`、`Too Good/Pass`のいずれかになります。
 - その下にはDouble Decisionと同様に、`No Double / Double/Take / Double/Pass`の3結果を固定順で表示し、Passを基準とした差を併記します。
+- `Too Good`判定は、No DoubleのEquityがDouble/PassのEquityを上回るかで判定します。相手の最適応手を組み合わせるため、通常の`Too Good/Pass`だけでなく、まれな`Too Good/Take`も表示します。
 - リダブルへのTake / Pass判断では、`No Redouble / Redouble/Take / Redouble/Pass`と表示します。
 
 ### Cube Actionのキューブ位置
