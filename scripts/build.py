@@ -298,36 +298,53 @@ def cube_candidate_payload(
 ) -> list[dict[str, Any]]:
     """Return the three XG cube outcomes in a fixed order.
 
-    XG's parenthesized comparison values use Double/Pass (or Redouble/Pass)
-    as the zero reference.  No Double and Double/Take therefore show their
-    signed equity difference from the pass result, while the pass row itself
-    is left blank.
+    The comparison reference follows XG's selected cube decision:
+
+    - No Double / No Redouble / Too Good -> no-offer row
+    - Double/Take / Redouble/Take -> take row
+    - Double/Pass / Redouble/Pass -> pass row
+
+    The reference row is left blank instead of displaying +0.000.  Other rows
+    show their signed equity difference from that reference.
     """
     labels = cube_action_labels(cube)
+    best_action = best_double_action(cube)
+
+    no_offer_equity = float(cube.no_double_equity)
+    take_equity = float(cube.double_take_equity)
     pass_equity = float(cube.double_drop_equity)
-    rows = [
+
+    if best_action == labels["take"]:
+        reference_key = "take"
+        reference_equity = take_equity
+    elif best_action == labels["pass"]:
+        reference_key = "pass"
+        reference_equity = pass_equity
+    else:
+        # No Double / No Redouble and both Too Good variants compare against
+        # continuing without turning the cube.
+        reference_key = "no_offer"
+        reference_equity = no_offer_equity
+
+    raw_rows = [
         (
+            "no_offer",
             labels["no_offer"],
-            float(cube.no_double_equity) - pass_equity,
+            no_offer_equity,
             first_available_evaluation(cube.no_double_analysis, position_evaluation),
         ),
-        (
-            labels["take"],
-            float(cube.double_take_equity) - pass_equity,
-            position_evaluation,
-        ),
-        # Pass is the comparison baseline, so its value is intentionally blank.
-        (labels["pass"], None, position_evaluation),
+        ("take", labels["take"], take_equity, position_evaluation),
+        ("pass", labels["pass"], pass_equity, position_evaluation),
     ]
 
     return [
         {
             "rank": order,
             "action": action,
-            "equityDifference": difference,
+            "equityDifference": None if key == reference_key else equity - reference_equity,
             **probability_fields(evaluation),
         }
-        for order, (action, difference, evaluation) in enumerate(rows, start=1)
+        for order, (key, action, equity, evaluation) in enumerate(raw_rows, start=1)
     ]
 
 def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any]) -> dict[str, Any] | None:

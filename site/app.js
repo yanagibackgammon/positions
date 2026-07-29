@@ -162,9 +162,10 @@ function formatError(value) {
 }
 
 function formatSignedEquity(value) {
+  if (value == null || value === "") return "";
   const number = Number(value);
-  if (!Number.isFinite(number)) return "";
-  const sign = number >= 0 ? "+" : "−";
+  if (!Number.isFinite(number) || Math.abs(number) < 0.0005) return "";
+  const sign = number > 0 ? "+" : "−";
   return `${sign}${Math.abs(number).toFixed(3)}`;
 }
 
