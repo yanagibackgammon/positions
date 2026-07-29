@@ -296,33 +296,38 @@ def cube_candidate_payload(
     cube: CubeAction,
     position_evaluation: Evaluation | None,
 ) -> list[dict[str, Any]]:
-    """Return all three XG cube outcomes in a fixed, readable order.
+    """Return the three XG cube outcomes in a fixed order.
 
-    Cube equities are intentionally kept as signed raw equities, rather than
-    converted to error losses.  This mirrors XG's cube-analysis panel, where
-    positive values are shown with a leading plus sign.
+    XG's parenthesized comparison values use Double/Pass (or Redouble/Pass)
+    as the zero reference.  No Double and Double/Take therefore show their
+    signed equity difference from the pass result, while the pass row itself
+    is left blank.
     """
     labels = cube_action_labels(cube)
+    pass_equity = float(cube.double_drop_equity)
     rows = [
         (
             labels["no_offer"],
-            cube.no_double_equity,
+            float(cube.no_double_equity) - pass_equity,
             first_available_evaluation(cube.no_double_analysis, position_evaluation),
         ),
-        (labels["take"], cube.double_take_equity, position_evaluation),
-        # Pass is terminal, so use the same position evaluation only as a
-        # probability fallback.  The displayed equity is the XG pass equity.
-        (labels["pass"], cube.double_drop_equity, position_evaluation),
+        (
+            labels["take"],
+            float(cube.double_take_equity) - pass_equity,
+            position_evaluation,
+        ),
+        # Pass is the comparison baseline, so its value is intentionally blank.
+        (labels["pass"], None, position_evaluation),
     ]
 
     return [
         {
             "rank": order,
             "action": action,
-            "cubeEquity": float(equity),
+            "equityDifference": difference,
             **probability_fields(evaluation),
         }
-        for order, (action, equity, evaluation) in enumerate(rows, start=1)
+        for order, (action, difference, evaluation) in enumerate(rows, start=1)
     ]
 
 def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any]) -> dict[str, Any] | None:

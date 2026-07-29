@@ -115,13 +115,16 @@ Double DecisionとTake / Passは、画面上ではすべて`Cube Action`へ集�
 
 ```text
 最善アクション（太字）
-No Double      符号付きEquity
-Double/Take    符号付きEquity
-Double/Pass    符号付きEquity
+No Double      −0.156
+Double/Take    +0.262
+Double/Pass
 ```
 
-- Equityはエラー差ではなく、XGが保持する各結果のEquityそのものを小数第3位まで表示します。
-- 正のEquityには`+`、負のEquityには`−`を付けます。
+- XGと同じく、`Double/Pass`のEquityを基準値として、他の結果との差を小数第3位まで表示します。
+- `No Double`は「No DoubleのEquity − Double/PassのEquity」です。
+- `Double/Take`は「Double/TakeのEquity − Double/PassのEquity」です。
+- `Double/Pass`は基準行のため数値を表示しません。
+- 正の差には`+`、負の差には`−`を付けます。
 - 最善アクションは`Double/Take`、`Double/Pass`、`No Double`、`Too good/Take`、`Too good/Pass`のいずれかです。
 - `Too good/...`は最上段の最善アクションとして表示し、下の3結果は比較用として`No Double / Double/Take / Double/Pass`を維持します。
 
@@ -129,9 +132,9 @@ Double/Pass    符号付きEquity
 
 ```text
 最善アクション（太字）
-No Redouble       符号付きEquity
-Redouble/Take     符号付きEquity
-Redouble/Pass     符号付きEquity
+No Redouble       符号付き差
+Redouble/Take     符号付き差
+Redouble/Pass
 ```
 
 ### Take / Pass
@@ -143,7 +146,7 @@ Take / Passのエラー対象者は応手側ですが、表示はキューブを
 - 盤面、チェッカー色、スコア、PIP、勝率をダブラー側の視点へ反転します。
 - ダブラーが元棋譜のPlayer 2の場合も、盤面そのものを反転します。
 - 最上段の最善アクションは`Double/Take`または`Double/Pass`です。
-- その下にはDouble Decisionと同様に、`No Double / Double/Take / Double/Pass`の3結果と符号付きEquityを固定順で表示します。
+- その下にはDouble Decisionと同様に、`No Double / Double/Take / Double/Pass`の3結果を固定順で表示し、Passを基準とした差を併記します。
 - リダブルへのTake / Pass判断では、`No Redouble / Redouble/Take / Redouble/Pass`と表示します。
 
 ### Cube Actionのキューブ位置

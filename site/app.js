@@ -170,7 +170,7 @@ function formatSignedEquity(value) {
 
 function cubeActionCell(position) {
   const outcomes = (Array.isArray(position.candidates) ? position.candidates : [])
-    .filter((candidate) => Number.isFinite(Number(candidate?.cubeEquity)))
+    .filter((candidate) => candidate && candidate.action)
     .slice(0, 3);
 
   const rows = [
@@ -181,7 +181,7 @@ function cubeActionCell(position) {
     ...outcomes.map((candidate) => `
       <div class="action-option cube-outcome">
         <span class="action-text">${escapeHTML(candidate.action || "—")}</span>
-        <span class="action-error">${escapeHTML(formatSignedEquity(candidate.cubeEquity))}</span>
+        <span class="action-error">${escapeHTML(formatSignedEquity(candidate.equityDifference))}</span>
       </div>`),
   ].join("");
 
