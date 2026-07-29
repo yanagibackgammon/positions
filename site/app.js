@@ -164,6 +164,10 @@ function formatError(value) {
 function actionCell(position) {
   const sourceCandidates = Array.isArray(position.candidates) ? position.candidates : [];
   const orderedCandidates = sourceCandidates
+    .filter((candidate) => {
+      const loss = Number(candidate?.equityLoss);
+      return Number.isFinite(loss) && loss >= 0 && loss < 100;
+    })
     .slice()
     .sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0));
   const candidates = orderedCandidates.slice(0, 3);
@@ -178,10 +182,13 @@ function actionCell(position) {
     const playedCandidate = orderedCandidates.find(
       (candidate) => String(candidate.action || "").trim() === playedAction,
     );
+    const candidateLoss = Number(playedCandidate?.equityLoss);
     candidates.push({
       rank: playedCandidate?.rank ?? 4,
       action: playedAction,
-      equityLoss: playedCandidate?.equityLoss ?? position.errorLoss,
+      equityLoss: Number.isFinite(candidateLoss) && candidateLoss >= 0 && candidateLoss < 100
+        ? candidateLoss
+        : position.errorLoss,
       isPlayedError: true,
     });
   }

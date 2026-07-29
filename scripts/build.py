@@ -60,8 +60,48 @@ def classification(loss: float, blunder_threshold: float) -> str:
     return "Blunder" if loss >= blunder_threshold else "Error"
 
 
-def probability_fields(evaluation: Evaluation | None, invert: bool = False) -> dict[str, float | None]:
+def valid_probability_evaluation(evaluation: Evaluation | None) -> bool:
+    """Return True only for a real XG probability vector.
+
+    Some XG files keep unused candidate slots with the NOT_ANALYSED sentinel
+    (-1000) and an all-zero probability vector.  Those records are placeholders,
+    not genuine 0% positions, and must never be published or used as fallbacks.
+    """
     if evaluation is None:
+        return False
+
+    values = (
+        evaluation.win_single,
+        evaluation.win_gammon,
+        evaluation.win_bg,
+        evaluation.lose_single,
+        evaluation.lose_gammon,
+        evaluation.lose_bg,
+        evaluation.equity,
+    )
+    if not all(math.isfinite(float(value)) for value in values):
+        return False
+    if abs(float(evaluation.equity) - float(xgread.NOT_ANALYSED)) < 1e-6:
+        return False
+
+    win = float(evaluation.win_single)
+    win_g = float(evaluation.win_gammon)
+    win_bg = float(evaluation.win_bg)
+    lose = float(evaluation.lose_single)
+    lose_g = float(evaluation.lose_gammon)
+    lose_bg = float(evaluation.lose_bg)
+
+    if not (0.0 <= win <= 1.0 and 0.0 <= lose <= 1.0):
+        return False
+    if not (0.0 <= win_bg <= win_g <= win + 1e-6):
+        return False
+    if not (0.0 <= lose_bg <= lose_g <= lose + 1e-6):
+        return False
+    return abs((win + lose) - 1.0) <= 0.02
+
+
+def probability_fields(evaluation: Evaluation | None, invert: bool = False) -> dict[str, float | None]:
+    if not valid_probability_evaluation(evaluation):
         return {
             "winRate": None,
             "gammonWinRate": None,
@@ -105,8 +145,24 @@ RATE_FIELD_KEYS = (
 
 
 def first_available_evaluation(*evaluations: Evaluation | None) -> Evaluation | None:
-    """Return the first parsed probability vector available for this position."""
-    return next((evaluation for evaluation in evaluations if evaluation is not None), None)
+    """Return the first genuine probability vector available for this position."""
+    return next((evaluation for evaluation in evaluations if valid_probability_evaluation(evaluation)), None)
+
+
+def valid_probability_mapping(values: dict[str, Any]) -> bool:
+    """Validate the four rates after they have been converted to JSON fields."""
+    try:
+        win = float(values["winRate"])
+        win_g = float(values["gammonWinRate"])
+        lose = float(values["loseRate"])
+        lose_g = float(values["gammonLoseRate"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    if not all(math.isfinite(value) for value in (win, win_g, lose, lose_g)):
+        return False
+    if not (0.0 <= win_g <= win <= 1.0 and 0.0 <= lose_g <= lose <= 1.0):
+        return False
+    return abs((win + lose) - 1.0) <= 0.02
 
 
 def ensure_row_probabilities(row: dict[str, Any]) -> None:
@@ -118,24 +174,20 @@ def ensure_row_probabilities(row: dict[str, Any]) -> None:
     We never invent percentages: if no analysed vector exists anywhere in the
     row, the build fails instead of publishing blank rates.
     """
-    if all(row.get(key) is not None for key in RATE_FIELD_KEYS):
+    if valid_probability_mapping(row):
         return
 
     candidates = row.get("candidates") or []
-    fallback = next(
-        (candidate for candidate in candidates if all(candidate.get(key) is not None for key in RATE_FIELD_KEYS)),
-        None,
-    )
+    fallback = next((candidate for candidate in candidates if valid_probability_mapping(candidate)), None)
     if fallback is not None:
         for key in (*RATE_FIELD_KEYS, "backgammonWinRate", "backgammonLoseRate", "equity"):
-            if row.get(key) is None and fallback.get(key) is not None:
+            if fallback.get(key) is not None:
                 row[key] = fallback[key]
 
-    missing = [key for key in RATE_FIELD_KEYS if row.get(key) is None]
-    if missing:
+    if not valid_probability_mapping(row):
         raise RuntimeError(
-            f"No probability vector for {row.get('id', 'unknown position')}: "
-            f"missing {', '.join(missing)}"
+            f"No valid probability vector for {row.get('id', 'unknown position')}. "
+            "The XG record contains only unanalysed placeholder data."
         )
 
 
@@ -201,15 +253,29 @@ def compact_move_notation(notation: str) -> str:
 
 
 def candidate_payload(move: Move) -> list[dict[str, Any]]:
-    """Return checker candidates in true best-to-worst equity-loss order."""
-    ordered = sorted(move.candidates, key=lambda candidate: float(candidate.equity_loss))
+    """Return only genuinely analysed checker candidates, best to worst.
+
+    XG may store the played move in an unused candidate slot whose evaluation is
+    all zero and whose equity is -1000.  Filtering those placeholders prevents
+    both false 0.0% rates and absurd -1000.xxx error values.
+    """
+    valid_candidates = [
+        candidate for candidate in move.candidates
+        if valid_probability_evaluation(candidate.evaluation)
+    ]
+    valid_candidates.sort(key=lambda candidate: float(candidate.evaluation.equity), reverse=True)
+    if not valid_candidates:
+        return []
+
+    best_equity = float(valid_candidates[0].evaluation.equity)
     rows: list[dict[str, Any]] = []
-    for rank, candidate in enumerate(ordered, start=1):
+    for rank, candidate in enumerate(valid_candidates, start=1):
+        equity_loss = max(0.0, best_equity - float(candidate.evaluation.equity))
         rows.append(
             {
                 "rank": rank,
                 "action": compact_move_notation(xgread.format_moves(candidate.moves, move.position_before)),
-                "equityLoss": max(0.0, float(candidate.equity_loss)),
+                "equityLoss": equity_loss,
                 **probability_fields(candidate.evaluation),
             }
         )
@@ -251,28 +317,22 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
 
     played_index = move.played_index
     played_candidate = move.candidates[played_index] if played_index is not None else None
-    if played_candidate is not None:
-        loss = max(0.0, float(played_candidate.equity_loss))
-        actual_evaluation = first_available_evaluation(
-            played_candidate.evaluation,
-            move.analysis,
-            *(candidate.evaluation for candidate in move.candidates),
-        )
-    else:
-        loss = abs(float(move.error)) if move.is_analysed else 0.0
-        actual_evaluation = first_available_evaluation(
-            move.analysis,
-            *(candidate.evaluation for candidate in move.candidates),
-        )
+
+    # move.error is XG's authoritative error for the move actually played.
+    # A matched candidate can be an unanalysed placeholder with equity -1000,
+    # so its derived equity_loss must not be used as the displayed error.
+    loss = abs(float(move.error)) if move.is_analysed and math.isfinite(float(move.error)) else 0.0
+    actual_evaluation = first_available_evaluation(
+        played_candidate.evaluation if played_candidate is not None else None,
+        move.analysis,
+        *(candidate.evaluation for candidate in move.candidates),
+    )
 
     if loss + 1e-12 < float(cfg["errorThreshold"]):
         return None
 
-    best_action = (
-        compact_move_notation(xgread.format_moves(move.candidates[0].moves, move.position_before))
-        if move.candidates
-        else "—"
-    )
+    checker_candidates = candidate_payload(move)
+    best_action = checker_candidates[0]["action"] if checker_candidates else "—"
     actor_score, opponent_score = score_for_sign(decision, move.player)
     opponent = player_name(match, -move.player)
     row_id = event_id(match.identity_hash, decision.game_number, decision.move_number, "checker", actor)
@@ -304,7 +364,7 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
         "cubeValue": cube_value_number(move.cube_value),
         "cubeOwner": cube_owner_for_view(move.cube_value, move.player),
         "position": position_for_view(move.position_before.points, move.player),
-        "candidates": candidate_payload(move),
+        "candidates": checker_candidates,
         **probability_fields(actual_evaluation),
         "matchDate": match.header.date.date().isoformat() if match.header.date else None,
     }
