@@ -260,11 +260,31 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
     }
 
 
+def cube_response(cube: CubeAction) -> str:
+    """Return the responder's optimal action after a double."""
+    return "Take" if cube.double_take_equity <= cube.double_drop_equity else "Pass"
+
+
+def non_double_action(cube: CubeAction) -> str:
+    """Label the single legal no-cube alternative without duplicating it.
+
+    A position is "Too good" when playing on is worth more than cashing the
+    current cube.  The suffix records what the opponent's optimal response
+    would have been if a double were offered.  The rare Too good/Take case is
+    therefore preserved as well as the usual Too good/Pass case.
+    """
+    response = cube_response(cube)
+    if cube.no_double_equity > cube.double_drop_equity + 1e-12:
+        return f"Too good/{response}"
+    return "No Double"
+
+
 def best_double_action(cube: CubeAction) -> str:
+    response = cube_response(cube)
     effective_double = min(cube.double_take_equity, cube.double_drop_equity)
-    if effective_double <= cube.no_double_equity:
-        return "No Double"
-    return "Double/Take" if cube.double_take_equity <= cube.double_drop_equity else "Double/Pass"
+    if effective_double > cube.no_double_equity + 1e-12:
+        return f"Double/{response}"
+    return non_double_action(cube)
 
 
 def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, Any]) -> dict[str, Any] | None:
@@ -279,7 +299,7 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
         return None
 
     actual = (
-        "No Double"
+        non_double_action(cube)
         if not cube.doubled
         else ("Double/Take" if cube.took else "Double/Pass")
     )
@@ -324,7 +344,7 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
         "position": position_for_view(cube.position.points, actor_sign),
         "candidates": ranked_cube_candidates(
             [
-                ("No Double", cube.no_double_equity, cube.no_double_analysis),
+                (non_double_action(cube), cube.no_double_equity, cube.no_double_analysis),
                 ("Double/Take", cube.double_take_equity, cube.double_take_analysis),
                 ("Double/Pass", cube.double_drop_equity, None),
             ],
@@ -540,14 +560,35 @@ def render_board_svg(row: dict[str, Any]) -> str:
             cy = board_top + 25 + idx * step if top else board_bottom - 25 - idx * step
             checker(cx, cy, black, count if idx == visible - 1 and count > 5 else None)
 
-    # Bar checkers.
+    # Bar checkers.  Centre each visible stack halfway between the central
+    # cube and the corresponding outer edge, keeping it clear of the cube.
     bar_center = (bar_x1 + bar_x2) / 2
+    board_center_y = (board_top + board_bottom) / 2
     opponent_bar = max(-int(points[0]), 0)
     on_roll_bar = max(int(points[25]), 0)
-    for idx in range(min(opponent_bar, 5)):
-        checker(bar_center, board_top + 25 + idx * 43, False, opponent_bar if idx == min(opponent_bar, 5) - 1 and opponent_bar > 5 else None)
-    for idx in range(min(on_roll_bar, 5)):
-        checker(bar_center, board_bottom - 25 - idx * 43, True, on_roll_bar if idx == min(on_roll_bar, 5) - 1 and on_roll_bar > 5 else None)
+    bar_checker_step = 38.0
+
+    opponent_visible = min(opponent_bar, 5)
+    opponent_anchor_y = (board_top + board_center_y) / 2
+    opponent_start_y = opponent_anchor_y - (opponent_visible - 1) * bar_checker_step / 2
+    for idx in range(opponent_visible):
+        checker(
+            bar_center,
+            opponent_start_y + idx * bar_checker_step,
+            False,
+            opponent_bar if idx == opponent_visible - 1 and opponent_bar > 5 else None,
+        )
+
+    on_roll_visible = min(on_roll_bar, 5)
+    on_roll_anchor_y = (board_bottom + board_center_y) / 2
+    on_roll_start_y = on_roll_anchor_y - (on_roll_visible - 1) * bar_checker_step / 2
+    for idx in range(on_roll_visible):
+        checker(
+            bar_center,
+            on_roll_start_y + idx * bar_checker_step,
+            True,
+            on_roll_bar if idx == on_roll_visible - 1 and on_roll_bar > 5 else None,
+        )
 
     # Doubling cube in the bar.
     cube_size = 36
