@@ -96,6 +96,49 @@ def probability_fields(evaluation: Evaluation | None, invert: bool = False) -> d
     }
 
 
+RATE_FIELD_KEYS = (
+    "winRate",
+    "gammonWinRate",
+    "loseRate",
+    "gammonLoseRate",
+)
+
+
+def first_available_evaluation(*evaluations: Evaluation | None) -> Evaluation | None:
+    """Return the first parsed probability vector available for this position."""
+    return next((evaluation for evaluation in evaluations if evaluation is not None), None)
+
+
+def ensure_row_probabilities(row: dict[str, Any]) -> None:
+    """Guarantee that every published position has W/GW/L/GL values.
+
+    XG does not attach a probability vector to the terminal Pass action itself.
+    In that case the probability vector from another analysed action at the same
+    pre-response position (normally Double/Take) is the correct display source.
+    We never invent percentages: if no analysed vector exists anywhere in the
+    row, the build fails instead of publishing blank rates.
+    """
+    if all(row.get(key) is not None for key in RATE_FIELD_KEYS):
+        return
+
+    candidates = row.get("candidates") or []
+    fallback = next(
+        (candidate for candidate in candidates if all(candidate.get(key) is not None for key in RATE_FIELD_KEYS)),
+        None,
+    )
+    if fallback is not None:
+        for key in (*RATE_FIELD_KEYS, "backgammonWinRate", "backgammonLoseRate", "equity"):
+            if row.get(key) is None and fallback.get(key) is not None:
+                row[key] = fallback[key]
+
+    missing = [key for key in RATE_FIELD_KEYS if row.get(key) is None]
+    if missing:
+        raise RuntimeError(
+            f"No probability vector for {row.get('id', 'unknown position')}: "
+            f"missing {', '.join(missing)}"
+        )
+
+
 def event_id(match_hash: str, game_number: int, move_number: int, decision_type: str, actor: str) -> str:
     raw = f"{match_hash}|{game_number}|{move_number}|{decision_type}|{actor.casefold()}"
     return "POS-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12].upper()
@@ -210,10 +253,17 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
     played_candidate = move.candidates[played_index] if played_index is not None else None
     if played_candidate is not None:
         loss = max(0.0, float(played_candidate.equity_loss))
-        actual_evaluation = played_candidate.evaluation
+        actual_evaluation = first_available_evaluation(
+            played_candidate.evaluation,
+            move.analysis,
+            *(candidate.evaluation for candidate in move.candidates),
+        )
     else:
         loss = abs(float(move.error)) if move.is_analysed else 0.0
-        actual_evaluation = move.analysis
+        actual_evaluation = first_available_evaluation(
+            move.analysis,
+            *(candidate.evaluation for candidate in move.candidates),
+        )
 
     if loss + 1e-12 < float(cfg["errorThreshold"]):
         return None
@@ -303,12 +353,16 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
         if not cube.doubled
         else ("Double/Take" if cube.took else "Double/Pass")
     )
+    position_evaluation = first_available_evaluation(
+        cube.double_take_analysis,
+        cube.no_double_analysis,
+    )
     if not cube.doubled:
-        actual_eval: Evaluation | None = cube.no_double_analysis
-    elif cube.took:
-        actual_eval = cube.double_take_analysis
+        actual_eval = first_available_evaluation(cube.no_double_analysis, position_evaluation)
     else:
-        actual_eval = None
+        # Pass is terminal and therefore has no probability vector of its own.
+        # Use the analysed Double/Take continuation from the same position.
+        actual_eval = position_evaluation
 
     actor_score, opponent_score = score_for_sign(decision, actor_sign)
     opponent = player_name(match, -actor_sign)
@@ -344,9 +398,13 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
         "position": position_for_view(cube.position.points, actor_sign),
         "candidates": ranked_cube_candidates(
             [
-                (non_double_action(cube), cube.no_double_equity, cube.no_double_analysis),
-                ("Double/Take", cube.double_take_equity, cube.double_take_analysis),
-                ("Double/Pass", cube.double_drop_equity, None),
+                (
+                    non_double_action(cube),
+                    cube.no_double_equity,
+                    first_available_evaluation(cube.no_double_analysis, position_evaluation),
+                ),
+                ("Double/Take", cube.double_take_equity, position_evaluation),
+                ("Double/Pass", cube.double_drop_equity, position_evaluation),
             ],
             best_double_action(cube),
         ),
@@ -371,7 +429,12 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
 
     actual = "Double/Take" if cube.took else "Double/Pass"
     best = "Double/Take" if cube.double_take_equity < cube.double_drop_equity else "Double/Pass"
-    actual_eval = cube.double_take_analysis if cube.took else None
+    # A terminal Pass has no separate probability vector.  The Double/Take
+    # analysis describes the same pre-response board and supplies W/GW/L/GL.
+    actual_eval = first_available_evaluation(
+        cube.double_take_analysis,
+        cube.no_double_analysis,
+    )
 
     # Cube-action rows are always displayed from the doubler's perspective:
     # the cube-throwing side is black, and the responding side is white.
@@ -411,8 +474,8 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
         "position": position_for_view(cube.position.points, doubler_sign),
         "candidates": ranked_cube_candidates(
             [
-                ("Double/Take", cube.double_take_equity, cube.double_take_analysis),
-                ("Double/Pass", cube.double_drop_equity, None),
+                ("Double/Take", cube.double_take_equity, actual_eval),
+                ("Double/Pass", cube.double_drop_equity, actual_eval),
             ],
             best,
         ),
@@ -702,6 +765,7 @@ def build() -> None:
                     row["opponent"] = "Opponent"
                     if row["onRollOpponent"] != row["player"]:
                         row["onRollOpponent"] = "Opponent"
+                ensure_row_probabilities(row)
                 board_relative = f"assets/boards/{row['id']}.svg"
                 row["boardImage"] = board_relative
                 (DIST_DIR / board_relative).write_text(render_board_svg(row), encoding="utf-8")
