@@ -282,32 +282,48 @@ def candidate_payload(move: Move) -> list[dict[str, Any]]:
     return rows
 
 
-def ranked_cube_candidates(
-    candidates: list[tuple[str, float, Evaluation | None]],
-    best_action: str,
+def cube_action_labels(cube: CubeAction) -> dict[str, str]:
+    """Return XG-style action labels for an initial double or a redouble."""
+    offer = "Double" if cube.cube_value == 0 else "Redouble"
+    return {
+        "no_offer": f"No {offer}",
+        "take": f"{offer}/Take",
+        "pass": f"{offer}/Pass",
+    }
+
+
+def cube_candidate_payload(
+    cube: CubeAction,
+    position_evaluation: Evaluation | None,
 ) -> list[dict[str, Any]]:
-    """Rank cube outcomes with the selected best action first and add error values."""
-    normalized: list[dict[str, Any]] = []
-    for action, equity, evaluation in candidates:
-        fields = probability_fields(evaluation)
-        fields["equity"] = float(equity)
-        normalized.append({"action": action, **fields})
+    """Return all three XG cube outcomes in a fixed, readable order.
 
-    best = next((row for row in normalized if row["action"] == best_action), normalized[0])
-    best_equity = float(best["equity"])
-    normalized.sort(
-        key=lambda row: (
-            0 if row["action"] == best_action else 1,
-            abs(best_equity - float(row["equity"])),
-            row["action"],
-        )
-    )
+    Cube equities are intentionally kept as signed raw equities, rather than
+    converted to error losses.  This mirrors XG's cube-analysis panel, where
+    positive values are shown with a leading plus sign.
+    """
+    labels = cube_action_labels(cube)
+    rows = [
+        (
+            labels["no_offer"],
+            cube.no_double_equity,
+            first_available_evaluation(cube.no_double_analysis, position_evaluation),
+        ),
+        (labels["take"], cube.double_take_equity, position_evaluation),
+        # Pass is terminal, so use the same position evaluation only as a
+        # probability fallback.  The displayed equity is the XG pass equity.
+        (labels["pass"], cube.double_drop_equity, position_evaluation),
+    ]
 
-    for rank, row in enumerate(normalized, start=1):
-        row["rank"] = rank
-        row["equityLoss"] = 0.0 if rank == 1 else abs(best_equity - float(row["equity"]))
-    return normalized
-
+    return [
+        {
+            "rank": order,
+            "action": action,
+            "cubeEquity": float(equity),
+            **probability_fields(evaluation),
+        }
+        for order, (action, equity, evaluation) in enumerate(rows, start=1)
+    ]
 
 def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any]) -> dict[str, Any] | None:
     actor = player_name(match, move.player)
@@ -371,31 +387,25 @@ def make_checker_row(match: Any, decision: Any, move: Move, cfg: dict[str, Any])
 
 
 def cube_response(cube: CubeAction) -> str:
-    """Return the responder's optimal action after a double."""
+    """Return the responder's optimal action after a double or redouble."""
     return "Take" if cube.double_take_equity <= cube.double_drop_equity else "Pass"
 
 
 def non_double_action(cube: CubeAction) -> str:
-    """Label the single legal no-cube alternative without duplicating it.
-
-    A position is "Too good" when playing on is worth more than cashing the
-    current cube.  The suffix records what the opponent's optimal response
-    would have been if a double were offered.  The rare Too good/Take case is
-    therefore preserved as well as the usual Too good/Pass case.
-    """
+    """Return the best no-cube label, preserving XG's Too good distinction."""
     response = cube_response(cube)
     if cube.no_double_equity > cube.double_drop_equity + 1e-12:
         return f"Too good/{response}"
-    return "No Double"
+    return cube_action_labels(cube)["no_offer"]
 
 
 def best_double_action(cube: CubeAction) -> str:
+    labels = cube_action_labels(cube)
     response = cube_response(cube)
     effective_double = min(cube.double_take_equity, cube.double_drop_equity)
     if effective_double > cube.no_double_equity + 1e-12:
-        return f"Double/{response}"
+        return labels["take"] if response == "Take" else labels["pass"]
     return non_double_action(cube)
-
 
 def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, Any]) -> dict[str, Any] | None:
     actor_sign = cube.player
@@ -408,10 +418,11 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
     if cube.error_double == xgread.NOT_ANALYSED or loss + 1e-12 < float(cfg["errorThreshold"]):
         return None
 
+    labels = cube_action_labels(cube)
     actual = (
         non_double_action(cube)
         if not cube.doubled
-        else ("Double/Take" if cube.took else "Double/Pass")
+        else (labels["take"] if cube.took else labels["pass"])
     )
     position_evaluation = first_available_evaluation(
         cube.double_take_analysis,
@@ -456,18 +467,7 @@ def make_double_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, 
         # by the doubler, who is always displayed as black.
         "cubeOwner": "center" if cube.cube_value == 0 else "onRoll",
         "position": position_for_view(cube.position.points, actor_sign),
-        "candidates": ranked_cube_candidates(
-            [
-                (
-                    non_double_action(cube),
-                    cube.no_double_equity,
-                    first_available_evaluation(cube.no_double_analysis, position_evaluation),
-                ),
-                ("Double/Take", cube.double_take_equity, position_evaluation),
-                ("Double/Pass", cube.double_drop_equity, position_evaluation),
-            ],
-            best_double_action(cube),
-        ),
+        "candidates": cube_candidate_payload(cube, position_evaluation),
         **probability_fields(actual_eval),
         "matchDate": match.header.date.date().isoformat() if match.header.date else None,
     }
@@ -487,8 +487,9 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
     if cube.error_take == xgread.NOT_ANALYSED or loss + 1e-12 < float(cfg["errorThreshold"]):
         return None
 
-    actual = "Double/Take" if cube.took else "Double/Pass"
-    best = "Double/Take" if cube.double_take_equity < cube.double_drop_equity else "Double/Pass"
+    labels = cube_action_labels(cube)
+    actual = labels["take"] if cube.took else labels["pass"]
+    best = labels["take"] if cube.double_take_equity < cube.double_drop_equity else labels["pass"]
     # A terminal Pass has no separate probability vector.  The Double/Take
     # analysis describes the same pre-response board and supplies W/GW/L/GL.
     actual_eval = first_available_evaluation(
@@ -532,13 +533,7 @@ def make_take_row(match: Any, decision: Any, cube: CubeAction, cfg: dict[str, An
         # board must be flipped as well when the doubler is player 2.
         "cubeOwner": "center" if cube.cube_value == 0 else "onRoll",
         "position": position_for_view(cube.position.points, doubler_sign),
-        "candidates": ranked_cube_candidates(
-            [
-                ("Double/Take", cube.double_take_equity, actual_eval),
-                ("Double/Pass", cube.double_drop_equity, actual_eval),
-            ],
-            best,
-        ),
+        "candidates": cube_candidate_payload(cube, actual_eval),
         **probability_fields(actual_eval),
         "matchDate": match.header.date.date().isoformat() if match.header.date else None,
     }

@@ -161,7 +161,35 @@ function formatError(value) {
   return `−${Math.abs(number).toFixed(3)}`;
 }
 
+function formatSignedEquity(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
+  const sign = number >= 0 ? "+" : "−";
+  return `${sign}${Math.abs(number).toFixed(3)}`;
+}
+
+function cubeActionCell(position) {
+  const outcomes = (Array.isArray(position.candidates) ? position.candidates : [])
+    .filter((candidate) => Number.isFinite(Number(candidate?.cubeEquity)))
+    .slice(0, 3);
+
+  const rows = [
+    `<div class="action-option is-best cube-best-action">
+      <span class="action-text">${escapeHTML(position.bestAction || "—")}</span>
+      <span class="action-error"></span>
+    </div>`,
+    ...outcomes.map((candidate) => `
+      <div class="action-option cube-outcome">
+        <span class="action-text">${escapeHTML(candidate.action || "—")}</span>
+        <span class="action-error">${escapeHTML(formatSignedEquity(candidate.cubeEquity))}</span>
+      </div>`),
+  ].join("");
+
+  return `<td class="action-cell"><div class="action-list">${rows}</div></td>`;
+}
+
 function actionCell(position) {
+  if (position.decisionType === "cube") return cubeActionCell(position);
   const sourceCandidates = Array.isArray(position.candidates) ? position.candidates : [];
   const orderedCandidates = sourceCandidates
     .filter((candidate) => {
